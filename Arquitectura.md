@@ -1,4 +1,4 @@
-src/main/java/com/app/reservas/
+src/main/java/udea/fabrica/bookify/
 │
 ├── domain/                      ───► [NÚCLEO/CORE] Sin dependencias de Spring ni BD
 │   ├── model/                   ───► Entidades puras del negocio
