@@ -33,6 +33,15 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
+tasks.named('bootRun') {
+    file('.env').readLines().each { line ->
+        if (line && !line.startsWith('#') && line.contains('=')) {
+            def keyVal = line.split('=', 2)
+            environment keyVal[0].trim(), keyVal[1].trim()
+        }
+    }
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
