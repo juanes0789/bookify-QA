@@ -31,4 +31,7 @@ public class ReservaEntity {
 
     @Column(name="fecha_actualizacion",nullable=false) 
     private OffsetDateTime fechaActualizacion;
+
+    @Column(name = "disponibilidad_id", nullable = false)
+    private UUID disponibilidadId;
 }

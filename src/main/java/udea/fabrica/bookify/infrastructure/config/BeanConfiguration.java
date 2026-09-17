@@ -2,9 +2,7 @@ package udea.fabrica.bookify.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import udea.fabrica.bookify.domain.port.in.CancelBookingUseCase;
 import udea.fabrica.bookify.domain.port.in.CreateAvailabilityInputPort;
-import udea.fabrica.bookify.domain.port.in.CreateBookingUseCase;
 import udea.fabrica.bookify.domain.port.in.GetBookingHistoryInputPort;
 import udea.fabrica.bookify.domain.port.in.GetServiceCatalogInputPort;
 import udea.fabrica.bookify.domain.port.out.AvailabilityOutputPort;
