@@ -11,6 +11,11 @@ import udea.fabrica.bookify.domain.port.out.ServiceCatalogOutputPort;
 import udea.fabrica.bookify.domain.service.CreateAvailabilityService;
 import udea.fabrica.bookify.domain.service.GetBookingHistoryService;
 import udea.fabrica.bookify.domain.service.GetServiceCatalogService;
+import udea.fabrica.bookify.domain.port.in.CreateBookingUseCase;
+import udea.fabrica.bookify.domain.port.in.CancelBookingUseCase;
+import udea.fabrica.bookify.domain.port.out.BookingRepositoryPort;
+import udea.fabrica.bookify.domain.port.out.AvailabilityRepositoryPort;
+import udea.fabrica.bookify.domain.service.BookingService;
 
 @Configuration
 public class BeanConfiguration {
@@ -29,4 +34,11 @@ public class BeanConfiguration {
     public GetBookingHistoryInputPort getBookingHistoryInputPort(BookingHistoryOutputPort bookingHistoryOutputPort) {
         return new GetBookingHistoryService(bookingHistoryOutputPort);
     }
+
+    @Bean public BookingService bookingService(BookingRepositoryPort b, AvailabilityRepositoryPort a) {
+        return new BookingService(b, a);
+    }
+    @Bean public CreateBookingUseCase createBookingUseCase(BookingService service) { return service; }
+    @Bean public CancelBookingUseCase cancelBookingUseCase(BookingService service) { return service; }
+
 }
