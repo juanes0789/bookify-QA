@@ -35,14 +35,8 @@ public class BeanConfiguration {
         return new GetBookingHistoryService(bookingHistoryOutputPort);
     }
 
-    // Registra la implementación compartida para ambas interfaces
     @Bean
-    public CreateBookingUseCase createBookingUseCase(BookingRepositoryPort bookingRepositoryPort, AvailabilityRepositoryPort availabilityRepositoryPort) {
+    public BookingService bookingService(BookingRepositoryPort bookingRepositoryPort, AvailabilityRepositoryPort availabilityRepositoryPort) {
         return new BookingService(bookingRepositoryPort, availabilityRepositoryPort);
-    }
-
-    @Bean
-    public CancelBookingUseCase cancelBookingUseCase(CreateBookingUseCase createBookingUseCase) {
-        return (CancelBookingUseCase) createBookingUseCase;
     }
 }
