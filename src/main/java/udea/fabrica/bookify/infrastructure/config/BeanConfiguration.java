@@ -2,20 +2,20 @@ package udea.fabrica.bookify.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import udea.fabrica.bookify.domain.port.in.CancelBookingUseCase;
 import udea.fabrica.bookify.domain.port.in.CreateAvailabilityInputPort;
+import udea.fabrica.bookify.domain.port.in.CreateBookingUseCase;
 import udea.fabrica.bookify.domain.port.in.GetBookingHistoryInputPort;
 import udea.fabrica.bookify.domain.port.in.GetServiceCatalogInputPort;
 import udea.fabrica.bookify.domain.port.out.AvailabilityOutputPort;
+import udea.fabrica.bookify.domain.port.out.AvailabilityRepositoryPort;
 import udea.fabrica.bookify.domain.port.out.BookingHistoryOutputPort;
+import udea.fabrica.bookify.domain.port.out.BookingRepositoryPort;
 import udea.fabrica.bookify.domain.port.out.ServiceCatalogOutputPort;
+import udea.fabrica.bookify.domain.service.BookingService;
 import udea.fabrica.bookify.domain.service.CreateAvailabilityService;
 import udea.fabrica.bookify.domain.service.GetBookingHistoryService;
 import udea.fabrica.bookify.domain.service.GetServiceCatalogService;
-import udea.fabrica.bookify.domain.port.in.CreateBookingUseCase;
-import udea.fabrica.bookify.domain.port.in.CancelBookingUseCase;
-import udea.fabrica.bookify.domain.port.out.BookingRepositoryPort;
-import udea.fabrica.bookify.domain.port.out.AvailabilityRepositoryPort;
-import udea.fabrica.bookify.domain.service.BookingService;
 
 @Configuration
 public class BeanConfiguration {
@@ -35,10 +35,14 @@ public class BeanConfiguration {
         return new GetBookingHistoryService(bookingHistoryOutputPort);
     }
 
-    @Bean public BookingService bookingService(BookingRepositoryPort b, AvailabilityRepositoryPort a) {
-        return new BookingService(b, a);
+    // Registra la implementación compartida para ambas interfaces
+    @Bean
+    public CreateBookingUseCase createBookingUseCase(BookingRepositoryPort bookingRepositoryPort, AvailabilityRepositoryPort availabilityRepositoryPort) {
+        return new BookingService(bookingRepositoryPort, availabilityRepositoryPort);
     }
-    @Bean public CreateBookingUseCase createBookingUseCase(BookingService service) { return service; }
-    @Bean public CancelBookingUseCase cancelBookingUseCase(BookingService service) { return service; }
 
+    @Bean
+    public CancelBookingUseCase cancelBookingUseCase(CreateBookingUseCase createBookingUseCase) {
+        return (CancelBookingUseCase) createBookingUseCase;
+    }
 }
