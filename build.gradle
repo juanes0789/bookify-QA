@@ -2,6 +2,8 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.1'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
+	id 'org.sonarqube' version '7.5.0.8588'
 }
 
 group = 'udea.fabrica'
@@ -33,15 +35,45 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
-tasks.named('bootRun') {
-    file('.env').readLines().each { line ->
-        if (line && !line.startsWith('#') && line.contains('=')) {
-            def keyVal = line.split('=', 2)
-            environment keyVal[0].trim(), keyVal[1].trim()
-        }
-    }
+def envFile = file('.env')
+if (envFile.exists()) {
+	tasks.named('bootRun') {
+		envFile.readLines().each { line ->
+			if (line && !line.startsWith('#') && line.contains('=')) {
+				def keyVal = line.split('=', 2)
+				environment keyVal[0].trim(), keyVal[1].trim()
+			}
+		}
+	}
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn tasks.named('test')
+	reports {
+		xml.required = true
+		html.required = false
+	}
+}
+
+sonar {
+	properties {
+		property 'sonar.projectKey', providers.environmentVariable('SONAR_PROJECT_KEY').orElse('bookify').get()
+		property 'sonar.projectName', 'Bookify'
+		property 'sonar.host.url', providers.environmentVariable('SONAR_HOST_URL').orElse('https://sonarcloud.io').get()
+		property 'sonar.coverage.jacoco.xmlReportPaths',
+			layout.buildDirectory.file('reports/jacoco/test/jacocoTestReport.xml').get().asFile.absolutePath
+
+		def sonarOrganization = providers.environmentVariable('SONAR_ORGANIZATION').getOrNull()
+		if (sonarOrganization) {
+			property 'sonar.organization', sonarOrganization
+		}
+	}
+}
+
+tasks.named('sonar') {
+	dependsOn tasks.named('jacocoTestReport')
 }
