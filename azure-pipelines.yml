@@ -96,8 +96,11 @@ stages:
 
           - bash: |
               chmod +x ./gradlew
-              ./gradlew test jacocoTestReport --no-daemon
-            displayName: Run unit tests and JaCoCo
+              if [ "$(SONAR_ENABLED)" = "true" ]; then
+                ./gradlew sonar --no-daemon
+              else
+                ./gradlew test jacocoTestReport --no-daemon
+              fi
 
           - task: PublishTestResults@2
             displayName: Publish JUnit results
