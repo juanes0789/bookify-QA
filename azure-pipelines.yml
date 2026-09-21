@@ -95,7 +95,7 @@ stages:
 
           - bash: |
               chmod +x ./gradlew
-              ./gradlew test jacocoTestReport --no-daemon
+              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace
             displayName: Run unit tests and JaCoCo without Sonar
             condition: and(succeeded(), ne(variables['SONAR_ENABLED'], 'true'))
 
