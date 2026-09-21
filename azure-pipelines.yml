@@ -14,7 +14,7 @@ pool:
 variables:
   GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
   # Set to true and configure the SonarCloud variables to enable analysis.
-  SONAR_ENABLED: 'false'
+  SONAR_ENABLED: 'true'
   SONAR_SERVICE_CONNECTION: SonarCloud
   SONAR_ORGANIZATION: ''
   SONAR_PROJECT_KEY: bookify
