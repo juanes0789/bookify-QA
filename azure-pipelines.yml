@@ -13,10 +13,10 @@ pool:
 
 variables:
   GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
+  # Azure DevOps variables must define SONAR_ORGANIZATION and SONAR_PROJECT_KEY.
   SONAR_ENABLED: 'true'
   SONAR_SERVICE_CONNECTION: SonarCloud
   SONAR_PROJECT_KEY: bookify
-
 
 stages:
   - stage: Build
@@ -82,24 +82,22 @@ stages:
                 gradle | "$(Agent.OS)"
               path: $(GRADLE_USER_HOME)
 
-          - task: SonarCloudPrepare@3
-            displayName: Prepare SonarCloud analysis
+          - bash: |
+              chmod +x ./gradlew
+              SONAR_TOKEN="$(SONAR_TOKEN)" \
+              SONAR_PROJECT_KEY="$(SONAR_PROJECT_KEY)" \
+              SONAR_HOST_URL="https://sonarcloud.io" \
+              SONAR_ORGANIZATION="$(SONAR_ORGANIZATION)" \
+              SONAR_BRANCH_NAME="$(Build.SourceBranchName)" \
+              ./gradlew test jacocoTestReport sonar --no-daemon
+            displayName: Run tests, coverage and SonarCloud analysis
             condition: and(succeeded(), eq(variables['SONAR_ENABLED'], 'true'))
-            inputs:
-              SonarCloud: $(SONAR_SERVICE_CONNECTION)
-              organization: $(SONAR_ORGANIZATION)
-              scannerMode: other
-              extraProperties: |
-                sonar.projectKey=$(SONAR_PROJECT_KEY)
-                sonar.projectName=Bookify
-                sonar.organization=$(SONAR_ORGANIZATION)
-                sonar.branch.name=$(Build.SourceBranchName)
-                sonar.branch.target=main
 
           - bash: |
               chmod +x ./gradlew
               ./gradlew test jacocoTestReport --no-daemon
-            displayName: Run unit tests and JaCoCo
+            displayName: Run unit tests and JaCoCo without Sonar
+            condition: and(succeeded(), ne(variables['SONAR_ENABLED'], 'true'))
 
           - task: PublishTestResults@2
             displayName: Publish JUnit results
@@ -117,13 +115,3 @@ stages:
               summaryFileLocation: $(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml
               pathToSources: $(Build.SourcesDirectory)/src/main/java
               failIfCoverageEmpty: true
-
-          - task: SonarCloudAnalyze@3
-            displayName: Run SonarCloud analysis
-            condition: and(succeeded(), eq(variables['SONAR_ENABLED'], 'true'))
-
-          - task: SonarCloudPublish@3
-            displayName: Publish SonarCloud quality gate
-            condition: and(succeeded(), eq(variables['SONAR_ENABLED'], 'true'))
-            inputs:
-              pollingTimeoutSec: '300'
