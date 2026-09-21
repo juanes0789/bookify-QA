@@ -99,7 +99,7 @@ stages:
           # ====================================================
           - bash: |
               chmod +x ./gradlew
-              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace
+              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace --debug
             displayName: Run tests, coverage and SonarCloud analysis
             env:
               SONAR_TOKEN: $(SONAR_TOKEN)
