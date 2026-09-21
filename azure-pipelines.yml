@@ -13,18 +13,22 @@ pool:
 
 variables:
   GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
-  # Azure DevOps variables must define SONAR_ORGANIZATION and SONAR_PROJECT_KEY.
-  SONAR_ENABLED: 'true'
-  SONAR_SERVICE_CONNECTION: SonarCloud
   SONAR_PROJECT_KEY: bookify
 
 stages:
+
+  # ============================================================
+  # BUILD
+  # ============================================================
   - stage: Build
     displayName: Build
     jobs:
+
       - job: Compile
         displayName: Compile application
+
         steps:
+
           - checkout: self
             clean: true
             fetchDepth: 0
@@ -55,14 +59,22 @@ stages:
               targetPath: $(Build.SourcesDirectory)/build/libs
               artifact: bookify-jar
 
+
+  # ============================================================
+  # QUALITY ASSURANCE
+  # ============================================================
   - stage: QA
     displayName: Quality assurance
     dependsOn: Build
     condition: succeeded()
+
     jobs:
+
       - job: Tests
         displayName: Run tests and quality checks
+
         steps:
+
           - checkout: self
             clean: true
             fetchDepth: 0
@@ -82,23 +94,41 @@ stages:
                 gradle | "$(Agent.OS)"
               path: $(GRADLE_USER_HOME)
 
+          # ====================================================
+          # TEST + JACOCO + SONARCLOUD
+          # ====================================================
           - bash: |
               chmod +x ./gradlew
-              ./gradlew test jacocoTestReport sonar --no-daemon
+              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace
             displayName: Run tests, coverage and SonarCloud analysis
             env:
               SONAR_TOKEN: $(SONAR_TOKEN)
               SONAR_PROJECT_KEY: $(SONAR_PROJECT_KEY)
               SONAR_ORGANIZATION: $(SONAR_ORGANIZATION)
               SONAR_HOST_URL: https://sonarcloud.io
-              SONAR_BRANCH_NAME: $(Build.SourceBranchName)
 
+          # ====================================================
+          # VERIFY JACOCO REPORT
+          # ====================================================
           - bash: |
-              chmod +x ./gradlew
-              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace
-            displayName: Run unit tests and JaCoCo without Sonar
-            condition: and(succeeded(), ne(variables['SONAR_ENABLED'], 'true'))
+              echo "=== JaCoCo report ==="
 
+              if [ ! -f "$(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml" ]; then
+                echo "ERROR: JaCoCo XML report was not generated."
+                exit 1
+              fi
+
+              ls -lh "$(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml"
+
+              echo ""
+              echo "=== JaCoCo report size ==="
+              wc -c "$(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml"
+
+            displayName: Verify JaCoCo report
+
+          # ====================================================
+          # JUNIT RESULTS
+          # ====================================================
           - task: PublishTestResults@2
             displayName: Publish JUnit results
             condition: succeededOrFailed()
@@ -108,6 +138,9 @@ stages:
               failTaskOnFailedTests: true
               testRunTitle: Bookify tests
 
+          # ====================================================
+          # AZURE DEVOPS CODE COVERAGE
+          # ====================================================
           - task: PublishCodeCoverageResults@2
             displayName: Publish JaCoCo coverage
             condition: succeededOrFailed()
