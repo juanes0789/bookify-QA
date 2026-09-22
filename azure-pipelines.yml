@@ -13,19 +13,22 @@ pool:
 
 variables:
   GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
-  # Set to true and configure the SonarCloud variables to enable analysis.
-  SONAR_ENABLED: 'false'
-  SONAR_SERVICE_CONNECTION: SonarCloud
-  SONAR_ORGANIZATION: ''
   SONAR_PROJECT_KEY: bookify
 
 stages:
+
+  # ============================================================
+  # BUILD
+  # ============================================================
   - stage: Build
     displayName: Build
     jobs:
+
       - job: Compile
         displayName: Compile application
+
         steps:
+
           - checkout: self
             clean: true
             fetchDepth: 0
@@ -56,14 +59,22 @@ stages:
               targetPath: $(Build.SourcesDirectory)/build/libs
               artifact: bookify-jar
 
+
+  # ============================================================
+  # QUALITY ASSURANCE
+  # ============================================================
   - stage: QA
     displayName: Quality assurance
     dependsOn: Build
     condition: succeeded()
+
     jobs:
+
       - job: Tests
         displayName: Run tests and quality checks
+
         steps:
+
           - checkout: self
             clean: true
             fetchDepth: 0
@@ -83,25 +94,41 @@ stages:
                 gradle | "$(Agent.OS)"
               path: $(GRADLE_USER_HOME)
 
-          - task: SonarCloudPrepare@3
-            displayName: Prepare SonarCloud analysis
-            condition: and(succeeded(), eq(variables['SONAR_ENABLED'], 'true'))
-            inputs:
-              SonarCloud: $(SONAR_SERVICE_CONNECTION)
-              organization: $(SONAR_ORGANIZATION)
-              scannerMode: other
-              extraProperties: |
-                sonar.projectKey=$(SONAR_PROJECT_KEY)
-                sonar.projectName=Bookify
-
+          # ====================================================
+          # TEST + JACOCO + SONARCLOUD
+          # ====================================================
           - bash: |
               chmod +x ./gradlew
-              if [ "$(SONAR_ENABLED)" = "true" ]; then
-                ./gradlew sonar --no-daemon
-              else
-                ./gradlew test jacocoTestReport --no-daemon
+              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace --debug
+            displayName: Run tests, coverage and SonarCloud analysis
+            env:
+              SONAR_TOKEN: $(SONAR_TOKEN)
+              SONAR_PROJECT_KEY: $(SONAR_PROJECT_KEY)
+              SONAR_ORGANIZATION: $(SONAR_ORGANIZATION)
+              SONAR_HOST_URL: https://sonarcloud.io
+
+          # ====================================================
+          # VERIFY JACOCO REPORT
+          # ====================================================
+          - bash: |
+              echo "=== JaCoCo report ==="
+
+              if [ ! -f "$(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml" ]; then
+                echo "ERROR: JaCoCo XML report was not generated."
+                exit 1
               fi
 
+              ls -lh "$(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml"
+
+              echo ""
+              echo "=== JaCoCo report size ==="
+              wc -c "$(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml"
+
+            displayName: Verify JaCoCo report
+
+          # ====================================================
+          # JUNIT RESULTS
+          # ====================================================
           - task: PublishTestResults@2
             displayName: Publish JUnit results
             condition: succeededOrFailed()
@@ -111,6 +138,9 @@ stages:
               failTaskOnFailedTests: true
               testRunTitle: Bookify tests
 
+          # ====================================================
+          # AZURE DEVOPS CODE COVERAGE
+          # ====================================================
           - task: PublishCodeCoverageResults@2
             displayName: Publish JaCoCo coverage
             condition: succeededOrFailed()
@@ -118,13 +148,3 @@ stages:
               summaryFileLocation: $(Build.SourcesDirectory)/build/reports/jacoco/test/jacocoTestReport.xml
               pathToSources: $(Build.SourcesDirectory)/src/main/java
               failIfCoverageEmpty: true
-
-          - task: SonarCloudAnalyze@3
-            displayName: Run SonarCloud analysis
-            condition: and(succeeded(), eq(variables['SONAR_ENABLED'], 'true'))
-
-          - task: SonarCloudPublish@3
-            displayName: Publish SonarCloud quality gate
-            condition: and(succeeded(), eq(variables['SONAR_ENABLED'], 'true'))
-            inputs:
-              pollingTimeoutSec: '300'
