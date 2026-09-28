@@ -2,6 +2,7 @@ HELP.md
 SONAR.md
 .gradle
 build/
+Docs codefactory/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -38,3 +39,4 @@ out/
 
 ### VS Code ###
 .vscode/
+.DS_Store
