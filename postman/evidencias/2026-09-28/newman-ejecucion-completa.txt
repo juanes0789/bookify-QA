@@ -1,0 +1,331 @@
+newman
+
+Bookify – Casos de prueba HU-01 a HU-05
+
+❏ CP-HU01 – Registrar disponibilidad
+↳ CP-HU01-F1 · Registrar una disponibilidad válida
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 670ms]
+  ✓  Responde 201 Created
+  ✓  Retorna el id de la disponibilidad
+  ✓  Queda asociada a la agenda enviada
+  ✓  Conserva el rango de fecha y hora enviado
+  ✓  Registra la fecha de creación
+
+↳ CP-HU01-F1 · Verificar que el horario queda DISPONIBLE y reservable
+  GET https://bookify-pb92.onrender.com/api/v1/catalog/services [200 OK, 5.92kB, 307ms]
+  ✓  Responde 200 OK
+  ✓  El horario registrado aparece como reservable
+
+↳ CP-HU01-E1 · Rechazar un horario cruzado
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [409 Conflict, 441B, 335ms]
+  ✓  Responde 409 Conflict
+  ✓  El mensaje de error menciona "traslapa"
+  ✓  No retorna una disponibilidad creada
+
+↳ CP-HU01-E2 · Rechazar un rango inválido (inicio ≥ fin)
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [400 Bad Request, 449B, 181ms]
+  ✓  Responde 400 Bad Request
+  ✓  El mensaje de error menciona "anterior"
+
+↳ CP-HU01-E3 · Rechazar una agenda inexistente
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [400 Bad Request, 423B, 350ms]
+  ✓  Responde 400 Bad Request
+  ✓  El mensaje de error menciona "agenda"
+
+↳ CP-HU01-E4 · Rechazar una agenda inactiva (opcional)
+
+❏ CP-HU02 – Consultar servicios y horarios disponibles
+↳ CP-HU02-P1 · Preparar: crear un horario libre
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 626B, 510ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU02-P2 · Preparar: crear un horario que se va a reservar
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 460ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU02-P3 · Preparar: reservar el horario P2
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 648ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU02-F1 · Consultar el catálogo de servicios
+  GET https://bookify-pb92.onrender.com/api/v1/catalog/services [200 OK, 6.05kB, 289ms]
+  ✓  Responde 200 OK
+  ✓  Retorna al menos un servicio
+  ✓  Cada servicio tiene nombre, proveedor y horarios
+  ✓  El horario libre aparece en el catálogo
+  ✓  Cada horario está asociado a un único servicio
+  ✓  Cada horario tiene inicio anterior al fin
+
+↳ CP-HU02-E1 · Un horario reservado no aparece como disponible
+  GET https://bookify-pb92.onrender.com/api/v1/catalog/services [200 OK, 6.05kB, 279ms]
+  ✓  Responde 200 OK
+  ✓  El horario reservado no aparece como disponible
+  ✓  Ningún servicio aparece sin horarios disponibles
+
+❏ CP-HU03 – Crear una reserva
+↳ CP-HU03-P1 · Preparar: crear un horario libre
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 550ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU03-F1 · Ana reserva el horario
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 695ms]
+  ✓  Responde 201 Created
+  ✓  Retorna el id de la reserva
+  ✓  La reserva pertenece a Ana y al horario elegido
+  ✓  Registra la fecha de la reserva
+
+↳ CP-HU03-F1 · Verificar que la reserva queda CONFIRMADA
+  GET https://bookify-pb92.onrender.com/api/v1/reservas/historial [200 OK, 1.16kB, 281ms]
+  ✓  Responde 200 OK
+  ✓  La reserva aparece en el historial
+  ✓  La reserva está en estado CONFIRMADA
+
+↳ CP-HU03-F1 · Verificar que el horario queda OCUPADO
+  GET https://bookify-pb92.onrender.com/api/v1/catalog/services [200 OK, 6.05kB, 295ms]
+  ✓  Responde 200 OK
+  ✓  El horario ya no aparece como disponible
+
+↳ CP-HU03-E1 · Luis intenta reservar el mismo horario
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [409 Conflict, 405B, 398ms]
+  ✓  Responde 409 Conflict
+  ✓  El mensaje de error menciona "ya fue reservada"
+
+↳ CP-HU03-E1 · Verificar que no se creó una segunda reserva
+  GET https://bookify-pb92.onrender.com/api/v1/reservas/historial [200 OK, 410B, 271ms]
+  ✓  Responde 200 OK
+  ✓  Luis no tiene reserva sobre el horario
+
+↳ CP-HU03-E1 · Verificar que el horario continúa ocupado
+  GET https://bookify-pb92.onrender.com/api/v1/catalog/services [200 OK, 6.05kB, 278ms]
+  ✓  Responde 200 OK
+  ✓  El horario continúa ocupado
+
+↳ CP-HU03-E2 · Rechazar una reserva sin cliente
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [400 Bad Request, 462B, 236ms]
+  ✓  Responde 400 Bad Request
+
+↳ CP-HU03-E3 · Rechazar una reserva sin disponibilidad
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [400 Bad Request, 462B, 214ms]
+  ✓  Responde 400 Bad Request
+
+↳ CP-HU03-E4 · Rechazar un horario inexistente
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [409 Conflict, 423B, 342ms]
+  1. Responde 404 Not Found
+  ✓  El mensaje de error menciona "no existe"
+
+↳ CP-HU03-P2 · Preparar: crear un horario libre para E5
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 516ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU03-E5 · Rechazar una reserva de un cliente inexistente
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [500 Internal Server Error, 482B, 527ms]
+  2. Responde 404 Not Found
+  3. No responde con un error interno (500)
+
+❏ CP-HU04 – Cancelar una reserva
+↳ CP-HU04-P1 · Preparar: crear un horario futuro
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 517ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU04-P2 · Preparar: Ana reserva el horario futuro
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 695ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU04-F1 · Cancelar una reserva futura
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/ee1b6f99-e649-4e10-a334-30c3ffb378b6/cancel [200 OK, 589B, 818ms]
+  ✓  Responde 200 OK
+  ✓  Retorna la reserva cancelada
+  ✓  El estado cambió respecto al de la reserva confirmada
+
+↳ CP-HU04-F1 · Verificar que el horario vuelve a estar DISPONIBLE
+  GET https://bookify-pb92.onrender.com/api/v1/catalog/services [200 OK, 6.29kB, 311ms]
+  ✓  Responde 200 OK
+  ✓  El horario liberado aparece de nuevo como disponible
+
+↳ CP-HU04-F1 · Verificar que el horario liberado se puede reservar de nuevo
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 689ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU04-P3 · Preparar: crear un horario en el pasado
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 514ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU04-P4 · Preparar: Ana reserva el horario pasado
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 688ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU04-E1 · Rechazar la cancelación de una reserva pasada
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/a854aecd-c32d-40b8-8b3e-1bb499802875/cancel [400 Bad Request, 429B, 403ms]
+  ✓  Responde 400 Bad Request
+  4. El mensaje de error menciona "ya inició"
+
+↳ CP-HU04-E1 · Verificar que la reserva conserva su estado
+  GET https://bookify-pb92.onrender.com/api/v1/reservas/historial [200 OK, 1.3kB, 283ms]
+  ✓  Responde 200 OK
+  ✓  La reserva aparece en el historial
+  ✓  La reserva está en estado CONFIRMADA
+
+↳ CP-HU04-E1 · Verificar que el horario no se liberó
+  GET https://bookify-pb92.onrender.com/api/v1/catalog/services [200 OK, 6.17kB, 280ms]
+  ✓  Responde 200 OK
+  ✓  El horario no fue liberado
+
+↳ CP-HU04-E2 · Rechazar la cancelación de una reserva ya cancelada
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/ee1b6f99-e649-4e10-a334-30c3ffb378b6/cancel [404 Not Found, 419B, 400ms]
+  5. Responde 400 Bad Request
+  6. El mensaje de error menciona "ya está cancelada"
+
+↳ CP-HU04-E3 · Rechazar la cancelación de una reserva inexistente
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/28c19e56-4b62-4e6a-8881-08b760a57010/cancel [404 Not Found, 403B, 336ms]
+  ✓  Responde 404 Not Found
+  ✓  El mensaje de error menciona "No existe"
+
+❏ CP-HU05 – Consultar historial de reservas
+↳ CP-HU05-P1 · Preparar: crear horario 1 para Ana
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 519ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-P2 · Preparar: Ana reserva el horario 1
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 732ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-P3 · Preparar: crear horario 2 para Ana
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 464ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-P4 · Preparar: Ana reserva el horario 2
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 690ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-P5 · Preparar: crear horario para Luis
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 461ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-P6 · Preparar: Luis reserva su horario
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 690ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-F1 · Ana consulta su historial
+  GET https://bookify-pb92.onrender.com/api/v1/reservas/historial [200 OK, 1.56kB, 329ms]
+  ✓  Responde 200 OK
+  ✓  Retorna reservas
+  ✓  Cada reserva muestra servicio, proveedor, fecha, hora y estado
+  ✓  Incluye las dos reservas creadas para Ana
+  ✓  No incluye la reserva de Luis
+  ✓  Está ordenado de la más reciente a la más antigua
+  ✓  No muestra mensaje de historial vacío
+
+↳ CP-HU05-P7 · Preparar: crear horario 3 para Ana
+  POST https://bookify-pb92.onrender.com/api/v1/disponibilidades [201 Created, 627B, 467ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-P8 · Preparar: Ana reserva el horario 3
+  POST https://bookify-pb92.onrender.com/api/v1/bookings [201 Created, 604B, 715ms]
+  ✓  Responde 201 Created
+
+↳ CP-HU05-P9 · Preparar: Ana cancela la reserva 3
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/44f00c16-765c-4f40-868b-837d4f7e8094/cancel [200 OK, 589B, 901ms]
+  ✓  Responde 200 OK
+
+↳ CP-HU05-F2 · El historial incluye las reservas canceladas
+  GET https://bookify-pb92.onrender.com/api/v1/reservas/historial [200 OK, 1.56kB, 224ms]
+  ✓  Responde 200 OK
+  7. La reserva aparece en el historial
+  8. La reserva está en estado CANCELADA
+
+↳ CP-HU05-E1 · Cliente sin reservas
+  GET https://bookify-pb92.onrender.com/api/v1/reservas/historial [200 OK, 410B, 224ms]
+  ✓  Responde 200 OK
+  ✓  La lista de reservas está vacía
+  ✓  Muestra el mensaje "No tienes reservas registradas"
+
+↳ CP-HU05-E2 · Consultar sin identificar al cliente
+  GET https://bookify-pb92.onrender.com/api/v1/reservas/historial [400 Bad Request, 472B, 210ms]
+  ✓  Responde 400 Bad Request
+
+❏ Limpieza – cancelar las reservas futuras de la corrida
+↳ Limpieza · Cancelar la reserva de CP-HU02
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/ac946b63-124a-480d-b70a-bedc7e9acff6/cancel [200 OK, 589B, 824ms]
+  ✓  La reserva de prueba quedó cancelada
+
+↳ Limpieza · Cancelar la reserva de CP-HU03
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/bdd81b3a-e7ab-4e3a-bbd2-85dc95e0eccb/cancel [200 OK, 589B, 764ms]
+  ✓  La reserva de prueba quedó cancelada
+
+↳ Limpieza · Cancelar la reserva de CP-HU04
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/40196251-d835-4ccc-9764-85a9bf0108d6/cancel [200 OK, 589B, 913ms]
+  ✓  La reserva de prueba quedó cancelada
+
+↳ Limpieza · Cancelar la reserva de CP-HU05, reserva 1 de Ana
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/2b12873b-9a90-40a1-af05-2587fd478dae/cancel [200 OK, 589B, 808ms]
+  ✓  La reserva de prueba quedó cancelada
+
+↳ Limpieza · Cancelar la reserva de CP-HU05, reserva 2 de Ana
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/60ebe354-46e1-4c83-96d1-71d23ac0c5a4/cancel [200 OK, 588B, 809ms]
+  ✓  La reserva de prueba quedó cancelada
+
+↳ Limpieza · Cancelar la reserva de CP-HU05, reserva de Luis
+  PATCH https://bookify-pb92.onrender.com/api/v1/bookings/a7d1c77c-340e-476f-9283-0afb5cf947bf/cancel [200 OK, 589B, 812ms]
+  ✓  La reserva de prueba quedó cancelada
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  53 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  53 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  20 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  99 │                  8 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 27.1s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 52.47kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 492ms [min: 181ms, max: 913ms, s.d.: 211ms] │
+└────────────────────────────────────────────────────────────────────┘
+
+  #  failure         detail                                                                                                         
+                                                                                                                                    
+ 1.  AssertionError  Responde 404 Not Found                                                                                         
+                     expected response to have status code 404 but got 409                                                          
+                     at assertion:0 in test-script                                                                                  
+                     inside "CP-HU03 – Crear una reserva / CP-HU03-E4 · Rechazar un horario inexistente"                            
+                                                                                                                                    
+ 2.  AssertionError  Responde 404 Not Found                                                                                         
+                     expected response to have status code 404 but got 500                                                          
+                     at assertion:0 in test-script                                                                                  
+                     inside "CP-HU03 – Crear una reserva / CP-HU03-E5 · Rechazar una reserva de un cliente inexistente"             
+                                                                                                                                    
+ 3.  AssertionError  No responde con un error interno (500)                                                                         
+                     expected 500 to be below 500                                                                                   
+                     at assertion:1 in test-script                                                                                  
+                     inside "CP-HU03 – Crear una reserva / CP-HU03-E5 · Rechazar una reserva de un cliente inexistente"             
+                                                                                                                                    
+ 4.  AssertionError  El mensaje de error menciona "ya inició"                                                                       
+                     expected 'No se puede cancelar una reserva cuyo…' to include 'ya inició'                                       
+                     at assertion:1 in test-script                                                                                  
+                     inside "CP-HU04 – Cancelar una reserva / CP-HU04-E1 · Rechazar la cancelación de una reserva pasada"           
+                                                                                                                                    
+ 5.  AssertionError  Responde 400 Bad Request                                                                                       
+                     expected response to have status code 400 but got 404                                                          
+                     at assertion:0 in test-script                                                                                  
+                     inside "CP-HU04 – Cancelar una reserva / CP-HU04-E2 · Rechazar la cancelación de una reserva ya cancelada"     
+                                                                                                                                    
+ 6.  AssertionError  El mensaje de error menciona "ya está cancelada"                                                               
+                     expected 'La reserva no tiene una disponibilida…' to include 'ya está cancelada'                               
+                     at assertion:1 in test-script                                                                                  
+                     inside "CP-HU04 – Cancelar una reserva / CP-HU04-E2 · Rechazar la cancelación de una reserva ya cancelada"     
+                                                                                                                                    
+ 7.  AssertionError  La reserva aparece en el historial                                                                             
+                     no se encontró la reserva: expected undefined to exist                                                         
+                     at assertion:1 in test-script                                                                                  
+                     inside "CP-HU05 – Consultar historial de reservas / CP-HU05-F2 · El historial incluye las reservas canceladas" 
+                                                                                                                                    
+ 8.  AssertionError  La reserva está en estado CANCELADA                                                                            
+                     expected 'UNDEFINED' to include 'CANCELAD'                                                                     
+                     at assertion:2 in test-script                                                                                  
+                     inside "CP-HU05 – Consultar historial de reservas / CP-HU05-F2 · El historial incluye las reservas canceladas" 
