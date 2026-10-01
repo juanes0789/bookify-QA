@@ -13,7 +13,8 @@ pool:
 
 variables:
   GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
-  SONAR_PROJECT_KEY: bookify
+  SONAR_PROJECT_KEY: juanes0789_bookify-QA
+  SONAR_ORGANIZATION: juanes0789
 
 stages:
 
@@ -99,7 +100,7 @@ stages:
           # ====================================================
           - bash: |
               chmod +x ./gradlew
-              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace --debug
+              ./gradlew clean test jacocoTestReport sonar --no-daemon --stacktrace
             displayName: Run tests, coverage and SonarCloud analysis
             env:
               SONAR_TOKEN: $(SONAR_TOKEN)

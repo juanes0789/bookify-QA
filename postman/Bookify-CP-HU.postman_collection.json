@@ -1,0 +1,2646 @@
+{
+  "info": {
+    "_postman_id": "a61f5c49-5bc5-5f2b-8d94-9222eb074ee0",
+    "name": "Bookify – Casos de prueba HU-01 a HU-05",
+    "description": "Casos de prueba manuales CP-HU01 a CP-HU05 del Plan de Pruebas PP-BOOKIFY-001.\n\n**Antes de ejecutar**, selecciona el entorno *Bookify QA*. Ya trae:\n- `baseUrl`: la API en Render (cámbiala a http://localhost:8080 para correr en local).\n- `agendaServicioId`: una agenda de servicio **activa**.\n- `agendaInactivaId` (opcional): id de una agenda inactiva, para CP-HU01-E4; si está vacío, E4 se omite.\n\n- `clienteAnaId` y `clienteLuisId`: dos clientes de prueba que existen en la base (la API exige que el cliente exista).\n\nNo hay que cambiar nada entre ejecuciones: cada corrida crea horarios con fechas aleatorias. La carpeta **Limpieza**, al final, cancela las reservas futuras que creó la corrida.\n\nCada petición se identifica como `CP-HUxx-Pn` (preparación), `CP-HUxx-F1` (camino feliz) o `CP-HUxx-En` (excepciones y criterios de rechazo).\n\nCada carpeta es independiente: los pasos **Preparar** crean los datos que necesita el caso, con horarios aleatorios para poder repetir la ejecución. \n\nPara la evidencia (CA-07), ejecuta la colección con el *Collection Runner* y exporta los resultados.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "CP-HU01 – Registrar disponibilidad",
+      "description": "HU-01. Verifica que se registre un horario disponible para una agenda activa y que se rechacen los horarios cruzados, los rangos inválidos y las agendas inexistentes o inactivas.\n\n**No verificable por API:** la fecha de actualización (la respuesta no la retorna; revisar en BD) y la ausencia del estado DISPONIBLE en la base de datos (requiere alterar datos maestros).",
+      "item": [
+        {
+          "name": "CP-HU01-F1 · Registrar una disponibilidad válida",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu01_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu01_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test(\"Retorna el id de la disponibilidad\", () => pm.expect(body.id).to.be.a(\"string\").and.not.empty);",
+                  "pm.test(\"Queda asociada a la agenda enviada\", () => pm.expect(body.agendaServicioId).to.eql(pm.variables.get(\"agendaServicioId\")));",
+                  "pm.test(\"Conserva el rango de fecha y hora enviado\", () => {",
+                  "    pm.expect(new Date(body.inicioAt).getTime()).to.eql(new Date(pm.collectionVariables.get(\"hu01_inicio\")).getTime());",
+                  "    pm.expect(new Date(body.finAt).getTime()).to.eql(new Date(pm.collectionVariables.get(\"hu01_fin\")).getTime());",
+                  "});",
+                  "pm.test(\"Registra la fecha de creación\", () => pm.expect(body.fechaCreacion).to.be.a(\"string\").and.not.empty);",
+                  "pm.collectionVariables.set(\"hu01_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Camino feliz.** Registra un horario de 1 hora para una agenda de servicio activa.\n\n**Resultado esperado:** 201 Created; la disponibilidad queda registrada, asociada a la agenda y con fecha de creación.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu01_inicio}}\",\n  \"finAt\": \"{{hu01_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU01-F1 · Verificar que el horario queda DISPONIBLE y reservable",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const servicios = Array.isArray(body) ? body : [];",
+                  "const horarios = servicios.flatMap(s => (s.availableSchedules || []).map(h => Object.assign({}, h, { service: s.service, provider: s.provider })));",
+                  "const buscar = id => horarios.find(h => h.availabilityId === pm.collectionVariables.get(id));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"El horario registrado aparece como reservable\", () => pm.expect(buscar(\"hu01_disponibilidadId\"), \"no se encontró el horario en el catálogo\").to.exist);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Camino feliz (verificación).** El catálogo solo lista horarios en estado DISPONIBLE.\n\n**Resultado esperado:** el horario registrado aparece en el catálogo."
+          }
+        },
+        {
+          "name": "CP-HU01-E1 · Rechazar un horario cruzado",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Rango que se cruza con el creado en F1, como en el documento: 10:00-11:00 vs 10:30-11:30",
+                  "const inicio = new Date(new Date(pm.collectionVariables.get(\"hu01_inicio\")).getTime() + 30 * 60000);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu01_cruce_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu01_cruce_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 409 Conflict\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"El mensaje de error menciona \\\"traslapa\\\"\", () => pm.expect(body.error || \"\").to.include(\"traslapa\"));",
+                  "",
+                  "pm.test(\"No retorna una disponibilidad creada\", () => pm.expect(body.id).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Camino de excepción del documento.** Registra en la misma agenda un horario que empieza 30 minutos después del creado en F1 (equivale a 10:00–11:00 vs 10:30–11:30).\n\n**Resultado esperado:** 409 Conflict; el mensaje informa que el rango se traslapa; no se crea la disponibilidad.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu01_cruce_inicio}}\",\n  \"finAt\": \"{{hu01_cruce_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU01-E2 · Rechazar un rango inválido (inicio ≥ fin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const t = new Date(Date.now() + 90 * 86400000); t.setUTCSeconds(0, 0);",
+                  "pm.collectionVariables.set(\"hu01_invalido\", t.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona \\\"anterior\\\"\", () => pm.expect(body.error || \"\").to.include(\"anterior\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Criterio de rechazo:** la fecha/hora inicial es igual o posterior a la final.\n\n**Resultado esperado:** 400 Bad Request y no se crea la disponibilidad.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu01_invalido}}\",\n  \"finAt\": \"{{hu01_invalido}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU01-E3 · Rechazar una agenda inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona \\\"agenda\\\"\", () => pm.expect(body.error || \"\").to.include(\"agenda\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Criterio de rechazo:** la agenda de servicio no existe.\n\n**Resultado esperado:** 400 Bad Request; el mensaje indica que la agenda no existe o no está activa.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{$guid}}\",\n  \"inicioAt\": \"{{hu01_inicio}}\",\n  \"finAt\": \"{{hu01_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU01-E4 · Rechazar una agenda inactiva (opcional)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Opcional: solo se ejecuta si el entorno tiene una agenda inactiva configurada",
+                  "if (!pm.environment.get(\"agendaInactivaId\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona \\\"agenda\\\"\", () => pm.expect(body.error || \"\").to.include(\"agenda\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Criterio de rechazo:** la agenda de servicio no está activa. Se omite si el entorno no tiene `agendaInactivaId`.\n\n**Resultado esperado:** 400 Bad Request; el mensaje indica que la agenda no existe o no está activa.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaInactivaId}}\",\n  \"inicioAt\": \"{{hu01_inicio}}\",\n  \"finAt\": \"{{hu01_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "CP-HU02 – Consultar servicios y horarios disponibles",
+      "description": "HU-02. Verifica que el catálogo muestre servicio, proveedor y horarios disponibles, asociados al servicio correcto, y que oculte los horarios reservados y los servicios sin horarios.",
+      "item": [
+        {
+          "name": "CP-HU02-P1 · Preparar: crear un horario libre",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu02_libre_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu02_libre_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu02_libre_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Crea un horario que debe aparecer en el catálogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu02_libre_inicio}}\",\n  \"finAt\": \"{{hu02_libre_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU02-P2 · Preparar: crear un horario que se va a reservar",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu02_ocupada_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu02_ocupada_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu02_ocupada_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Crea un horario que se reservará en P3.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu02_ocupada_inicio}}\",\n  \"finAt\": \"{{hu02_ocupada_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU02-P3 · Preparar: reservar el horario P2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu02_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Reserva el horario P2 para que deje de estar disponible.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{hu02_ocupada_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU02-F1 · Consultar el catálogo de servicios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const servicios = Array.isArray(body) ? body : [];",
+                  "const horarios = servicios.flatMap(s => (s.availableSchedules || []).map(h => Object.assign({}, h, { service: s.service, provider: s.provider })));",
+                  "const buscar = id => horarios.find(h => h.availabilityId === pm.collectionVariables.get(id));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Retorna al menos un servicio\", () => pm.expect(servicios).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Cada servicio tiene nombre, proveedor y horarios\", () => servicios.forEach(s => {",
+                  "    pm.expect(s.service, \"nombre del servicio\").to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(s.provider, \"proveedor\").to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(s.availableSchedules, \"horarios\").to.be.an(\"array\");",
+                  "}));",
+                  "pm.test(\"El horario libre aparece en el catálogo\", () => pm.expect(buscar(\"hu02_libre_disponibilidadId\"), \"no se encontró el horario libre\").to.exist);",
+                  "pm.test(\"Cada horario está asociado a un único servicio\", () => {",
+                  "    const ids = horarios.map(h => h.availabilityId);",
+                  "    pm.expect(new Set(ids).size, \"hay horarios repetidos en varios servicios\").to.eql(ids.length);",
+                  "});",
+                  "pm.test(\"Cada horario tiene inicio anterior al fin\", () => horarios.forEach(h => pm.expect(new Date(h.inicioAt) < new Date(h.finAt), h.availabilityId).to.be.true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Camino feliz.**\n\n**Resultado esperado:** 200 OK; cada servicio muestra nombre, proveedor y horarios disponibles; el horario libre (P1) aparece asociado a un único servicio y proveedor."
+          }
+        },
+        {
+          "name": "CP-HU02-E1 · Un horario reservado no aparece como disponible",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const servicios = Array.isArray(body) ? body : [];",
+                  "const horarios = servicios.flatMap(s => (s.availableSchedules || []).map(h => Object.assign({}, h, { service: s.service, provider: s.provider })));",
+                  "const buscar = id => horarios.find(h => h.availabilityId === pm.collectionVariables.get(id));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"El horario reservado no aparece como disponible\", () => pm.expect(buscar(\"hu02_ocupada_disponibilidadId\")).to.be.undefined);",
+                  "pm.test(\"Ningún servicio aparece sin horarios disponibles\", () => servicios.forEach(s => pm.expect(s.availableSchedules, s.service).to.not.be.empty));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Camino de excepción.**\n\n**Resultado esperado:** el horario reservado en P3 no aparece y ningún servicio se muestra sin horarios disponibles."
+          }
+        }
+      ]
+    },
+    {
+      "name": "CP-HU03 – Crear una reserva",
+      "description": "HU-03. Verifica que un cliente reserve un horario libre (reserva CONFIRMADA y horario OCUPADO) y que se impidan la doble reserva y las solicitudes incompletas o sobre horarios inexistentes.",
+      "item": [
+        {
+          "name": "CP-HU03-P1 · Preparar: crear un horario libre",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu03_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu03_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu03_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Crea el horario que se va a reservar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu03_inicio}}\",\n  \"finAt\": \"{{hu03_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU03-F1 · Ana reserva el horario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test(\"Retorna el id de la reserva\", () => pm.expect(body.id).to.be.a(\"string\").and.not.empty);",
+                  "pm.test(\"La reserva pertenece a Ana y al horario elegido\", () => {",
+                  "    pm.expect(body.clienteId).to.eql(pm.variables.get(\"clienteAnaId\"));",
+                  "    pm.expect(body.disponibilidadId).to.eql(pm.collectionVariables.get(\"hu03_disponibilidadId\"));",
+                  "});",
+                  "pm.test(\"Registra la fecha de la reserva\", () => pm.expect(body.fechaReserva).to.be.a(\"string\").and.not.empty);",
+                  "pm.collectionVariables.set(\"hu03_reservaId\", body.id);",
+                  "pm.collectionVariables.set(\"estadoConfirmadaId\", body.estadoReservaId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Camino feliz.**\n\n**Resultado esperado:** 201 Created; la reserva pertenece a Ana y al horario elegido, y registra la fecha de reserva.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{hu03_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU03-F1 · Verificar que la reserva queda CONFIRMADA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const reservas = body.reservas || [];",
+                  "// fecha y hora del historial vienen en UTC a partir del inicio del horario",
+                  "const clave = v => { const iso = pm.collectionVariables.get(v + \"_inicio\"); return iso ? iso.slice(0, 10) + \" \" + iso.slice(11, 16) : \"\"; };",
+                  "const reservaDe = v => reservas.find(r => r.fecha + \" \" + String(r.hora).slice(0, 5) === clave(v));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"La reserva aparece en el historial\", () => pm.expect(reservaDe(\"hu03\"), \"no se encontró la reserva\").to.exist);",
+                  "pm.test(\"La reserva está en estado CONFIRMADA\", () => pm.expect(String((reservaDe(\"hu03\") || {}).estado).toUpperCase()).to.include(\"CONFIRMAD\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Cliente-Id",
+                "value": "{{clienteAnaId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservas",
+                "historial"
+              ]
+            },
+            "description": "**Camino feliz (verificación).** Consulta el historial de Ana para leer el estado de la reserva por su nombre."
+          }
+        },
+        {
+          "name": "CP-HU03-F1 · Verificar que el horario queda OCUPADO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const servicios = Array.isArray(body) ? body : [];",
+                  "const horarios = servicios.flatMap(s => (s.availableSchedules || []).map(h => Object.assign({}, h, { service: s.service, provider: s.provider })));",
+                  "const buscar = id => horarios.find(h => h.availabilityId === pm.collectionVariables.get(id));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"El horario ya no aparece como disponible\", () => pm.expect(buscar(\"hu03_disponibilidadId\")).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Camino feliz (verificación).**\n\n**Resultado esperado:** el horario ya no aparece en el catálogo."
+          }
+        },
+        {
+          "name": "CP-HU03-E1 · Luis intenta reservar el mismo horario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 409 Conflict\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"El mensaje de error menciona \\\"ya fue reservada\\\"\", () => pm.expect(body.error || \"\").to.include(\"ya fue reservada\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Camino de excepción del documento (doble reserva).**\n\n**Resultado esperado:** 409 Conflict; se informa que la disponibilidad ya fue reservada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteLuisId}}\",\n  \"disponibilidadId\": \"{{hu03_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU03-E1 · Verificar que no se creó una segunda reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const reservas = body.reservas || [];",
+                  "// fecha y hora del historial vienen en UTC a partir del inicio del horario",
+                  "const clave = v => { const iso = pm.collectionVariables.get(v + \"_inicio\"); return iso ? iso.slice(0, 10) + \" \" + iso.slice(11, 16) : \"\"; };",
+                  "const reservaDe = v => reservas.find(r => r.fecha + \" \" + String(r.hora).slice(0, 5) === clave(v));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Luis no tiene reserva sobre el horario\", () => pm.expect(reservaDe(\"hu03\")).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Cliente-Id",
+                "value": "{{clienteLuisId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservas",
+                "historial"
+              ]
+            },
+            "description": "**Camino de excepción (verificación).**\n\n**Resultado esperado:** Luis no tiene ninguna reserva sobre ese horario."
+          }
+        },
+        {
+          "name": "CP-HU03-E1 · Verificar que el horario continúa ocupado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const servicios = Array.isArray(body) ? body : [];",
+                  "const horarios = servicios.flatMap(s => (s.availableSchedules || []).map(h => Object.assign({}, h, { service: s.service, provider: s.provider })));",
+                  "const buscar = id => horarios.find(h => h.availabilityId === pm.collectionVariables.get(id));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"El horario continúa ocupado\", () => pm.expect(buscar(\"hu03_disponibilidadId\")).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Camino de excepción (verificación).**\n\n**Resultado esperado:** el horario sigue sin aparecer en el catálogo."
+          }
+        },
+        {
+          "name": "CP-HU03-E2 · Rechazar una reserva sin cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Criterio de rechazo:** no se proporciona el cliente.\n\n**Resultado esperado:** 400 Bad Request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disponibilidadId\": \"{{hu03_disponibilidadId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU03-E3 · Rechazar una reserva sin disponibilidad",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Criterio de rechazo:** no se proporciona la disponibilidad.\n\n**Resultado esperado:** 400 Bad Request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU03-E4 · Rechazar un horario inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 404 Not Found\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"El mensaje de error menciona \\\"no existe\\\"\", () => pm.expect(body.error || \"\").to.include(\"no existe\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Criterio de rechazo:** la disponibilidad no existe.\n\n**Resultado esperado:** 404 Not Found; el mensaje indica que la disponibilidad no existe y no se crea la reserva.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{$guid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU03-P2 · Preparar: crear un horario libre para E5",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu03_e5_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu03_e5_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu03_e5_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Crea un horario libre para intentar reservarlo con un cliente que no existe.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu03_e5_inicio}}\",\n  \"finAt\": \"{{hu03_e5_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU03-E5 · Rechazar una reserva de un cliente inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 404 Not Found\", () => pm.response.to.have.status(404));",
+                  "",
+                  "pm.test(\"No responde con un error interno (500)\", () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Criterio de rechazo:** el cliente no existe.\n\n**Resultado esperado:** 404 Not Found; el mensaje indica que el cliente no existe y no se crea la reserva.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{$guid}}\",\n  \"disponibilidadId\": \"{{hu03_e5_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "CP-HU04 – Cancelar una reserva",
+      "description": "HU-04. Verifica que una reserva futura se cancele y libere el horario, y que se rechace cancelar reservas pasadas, ya canceladas o inexistentes.\n\n**No verificable por API:** el registro en el historial de estados (revisar `tbl_historial_estado_reserva`) y los casos de reserva sin disponibilidad asociada o con disponibilidad inexistente (requieren datos inconsistentes en BD).",
+      "item": [
+        {
+          "name": "CP-HU04-P1 · Preparar: crear un horario futuro",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu04_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu04_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu04_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Crea un horario futuro que se reservará y luego se cancelará.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu04_inicio}}\",\n  \"finAt\": \"{{hu04_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU04-P2 · Preparar: Ana reserva el horario futuro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu04_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Crea la reserva confirmada que se va a cancelar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{hu04_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU04-F1 · Cancelar una reserva futura",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Retorna la reserva cancelada\", () => pm.expect(body.id).to.eql(pm.collectionVariables.get(\"hu04_reservaId\")));",
+                  "pm.test(\"El estado cambió respecto al de la reserva confirmada\", () => {",
+                  "    const confirmada = pm.collectionVariables.get(\"estadoConfirmadaId\");",
+                  "    if (confirmada) pm.expect(String(body.estadoReservaId)).to.not.eql(String(confirmada));",
+                  "    else pm.expect(body.estadoReservaId).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu04_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu04_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "**Camino feliz.**\n\n**Resultado esperado:** 200 OK y la reserva cambia de estado."
+          }
+        },
+        {
+          "name": "CP-HU04-F1 · Verificar que el horario vuelve a estar DISPONIBLE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const servicios = Array.isArray(body) ? body : [];",
+                  "const horarios = servicios.flatMap(s => (s.availableSchedules || []).map(h => Object.assign({}, h, { service: s.service, provider: s.provider })));",
+                  "const buscar = id => horarios.find(h => h.availabilityId === pm.collectionVariables.get(id));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"El horario liberado aparece de nuevo como disponible\", () => pm.expect(buscar(\"hu04_disponibilidadId\"), \"el horario no se liberó\").to.exist);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Camino feliz (verificación).**\n\n**Resultado esperado:** el horario liberado aparece de nuevo en el catálogo."
+          }
+        },
+        {
+          "name": "CP-HU04-F1 · Verificar que el horario liberado se puede reservar de nuevo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu04_luis_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Camino feliz (verificación).** Luis reserva el horario que Ana canceló.\n\n**Resultado esperado:** 201 Created.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteLuisId}}\",\n  \"disponibilidadId\": \"{{hu04_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU04-P3 · Preparar: crear un horario en el pasado",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el pasado) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() - minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu04_pasado_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu04_pasado_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu04_pasado_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Crea un horario que ya pasó (la API lo permite) para probar la regla de cancelación.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu04_pasado_inicio}}\",\n  \"finAt\": \"{{hu04_pasado_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU04-P4 · Preparar: Ana reserva el horario pasado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu04_pasado_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Crea una reserva confirmada sobre el horario pasado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{hu04_pasado_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU04-E1 · Rechazar la cancelación de una reserva pasada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona \\\"ya inició\\\"\", () => pm.expect(body.error || \"\").to.include(\"ya inició\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu04_pasado_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu04_pasado_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "**Camino de excepción del documento.**\n\n**Resultado esperado:** 400 Bad Request con el mensaje \"No se puede cancelar una reserva cuyo horario ya inició.\""
+          }
+        },
+        {
+          "name": "CP-HU04-E1 · Verificar que la reserva conserva su estado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const reservas = body.reservas || [];",
+                  "// fecha y hora del historial vienen en UTC a partir del inicio del horario",
+                  "const clave = v => { const iso = pm.collectionVariables.get(v + \"_inicio\"); return iso ? iso.slice(0, 10) + \" \" + iso.slice(11, 16) : \"\"; };",
+                  "const reservaDe = v => reservas.find(r => r.fecha + \" \" + String(r.hora).slice(0, 5) === clave(v));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"La reserva aparece en el historial\", () => pm.expect(reservaDe(\"hu04_pasado\"), \"no se encontró la reserva\").to.exist);",
+                  "pm.test(\"La reserva está en estado CONFIRMADA\", () => pm.expect(String((reservaDe(\"hu04_pasado\") || {}).estado).toUpperCase()).to.include(\"CONFIRMAD\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Cliente-Id",
+                "value": "{{clienteAnaId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservas",
+                "historial"
+              ]
+            },
+            "description": "**Camino de excepción (verificación).**\n\n**Resultado esperado:** la reserva sigue CONFIRMADA."
+          }
+        },
+        {
+          "name": "CP-HU04-E1 · Verificar que el horario no se liberó",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const servicios = Array.isArray(body) ? body : [];",
+                  "const horarios = servicios.flatMap(s => (s.availableSchedules || []).map(h => Object.assign({}, h, { service: s.service, provider: s.provider })));",
+                  "const buscar = id => horarios.find(h => h.availabilityId === pm.collectionVariables.get(id));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"El horario no fue liberado\", () => pm.expect(buscar(\"hu04_pasado_disponibilidadId\")).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Camino de excepción (verificación).**\n\n**Resultado esperado:** el horario sigue sin aparecer en el catálogo."
+          }
+        },
+        {
+          "name": "CP-HU04-E2 · Rechazar la cancelación de una reserva ya cancelada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona \\\"ya está cancelada\\\"\", () => pm.expect(body.error || \"\").to.include(\"ya está cancelada\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu04_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu04_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "**Criterio de rechazo:** la reserva ya se encuentra cancelada.\n\n**Resultado esperado:** 400 Bad Request con el mensaje \"La reserva ya está cancelada.\""
+          }
+        },
+        {
+          "name": "CP-HU04-E3 · Rechazar la cancelación de una reserva inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 404 Not Found\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"El mensaje de error menciona \\\"No existe\\\"\", () => pm.expect(body.error || \"\").to.include(\"No existe\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{$guid}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{$guid}}",
+                "cancel"
+              ]
+            },
+            "description": "**Criterio de rechazo:** la reserva no existe.\n\n**Resultado esperado:** 404 Not Found."
+          }
+        }
+      ]
+    },
+    {
+      "name": "CP-HU05 – Consultar historial de reservas",
+      "description": "HU-05. Verifica que el cliente vea solo sus reservas, ordenadas de la más reciente a la más antigua y con toda su información, y que un historial vacío muestre el mensaje correspondiente.",
+      "item": [
+        {
+          "name": "CP-HU05-P1 · Preparar: crear horario 1 para Ana",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu05_ana1_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu05_ana1_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_ana1_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Primer horario de Ana.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu05_ana1_inicio}}\",\n  \"finAt\": \"{{hu05_ana1_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-P2 · Preparar: Ana reserva el horario 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_ana1_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Reserva 1 de Ana.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{hu05_ana1_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-P3 · Preparar: crear horario 2 para Ana",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu05_ana2_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu05_ana2_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_ana2_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Segundo horario de Ana (otra fecha).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu05_ana2_inicio}}\",\n  \"finAt\": \"{{hu05_ana2_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-P4 · Preparar: Ana reserva el horario 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_ana2_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Reserva 2 de Ana.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{hu05_ana2_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-P5 · Preparar: crear horario para Luis",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu05_luis_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu05_luis_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_luis_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Horario que reservará otro cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu05_luis_inicio}}\",\n  \"finAt\": \"{{hu05_luis_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-P6 · Preparar: Luis reserva su horario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_luis_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Reserva de Luis.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteLuisId}}\",\n  \"disponibilidadId\": \"{{hu05_luis_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-F1 · Ana consulta su historial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const reservas = body.reservas || [];",
+                  "// fecha y hora del historial vienen en UTC a partir del inicio del horario",
+                  "const clave = v => { const iso = pm.collectionVariables.get(v + \"_inicio\"); return iso ? iso.slice(0, 10) + \" \" + iso.slice(11, 16) : \"\"; };",
+                  "const reservaDe = v => reservas.find(r => r.fecha + \" \" + String(r.hora).slice(0, 5) === clave(v));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Retorna reservas\", () => pm.expect(reservas).to.be.an(\"array\").that.is.not.empty);",
+                  "pm.test(\"Cada reserva muestra servicio, proveedor, fecha, hora y estado\", () => reservas.forEach(r => {",
+                  "    [\"servicio\", \"proveedor\", \"fecha\", \"hora\", \"estado\"].forEach(k => pm.expect(r[k], k).to.exist.and.not.be.empty);",
+                  "}));",
+                  "pm.test(\"Incluye las dos reservas creadas para Ana\", () => { pm.expect(reservaDe(\"hu05_ana1\"), \"reserva 1\").to.exist; pm.expect(reservaDe(\"hu05_ana2\"), \"reserva 2\").to.exist; });",
+                  "pm.test(\"No incluye la reserva de Luis\", () => pm.expect(reservaDe(\"hu05_luis\")).to.be.undefined);",
+                  "pm.test(\"Está ordenado de la más reciente a la más antigua\", () => {",
+                  "    const fechas = reservas.map(r => r.fecha + \" \" + r.hora);",
+                  "    pm.expect(fechas).to.eql([...fechas].sort().reverse());",
+                  "});",
+                  "pm.test(\"No muestra mensaje de historial vacío\", () => pm.expect(body.message).to.not.exist);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Cliente-Id",
+                "value": "{{clienteAnaId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservas",
+                "historial"
+              ]
+            },
+            "description": "**Camino feliz.** El cliente se identifica con el encabezado `X-Cliente-Id`.\n\n**Resultado esperado:** 200 OK; solo reservas de Ana, ordenadas de la más reciente a la más antigua, cada una con servicio, proveedor, fecha, hora y estado."
+          }
+        },
+        {
+          "name": "CP-HU05-P7 · Preparar: crear horario 3 para Ana",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Horario aleatorio de 1 hora (en el futuro) para no chocar con ejecuciones anteriores",
+                  "const minutos = 60 * 24 * (2 + Math.floor(Math.random() * 720)) + 5 * Math.floor(Math.random() * 288);",
+                  "const inicio = new Date(Date.now() + minutos * 60000);",
+                  "inicio.setUTCMinutes(Math.floor(inicio.getUTCMinutes() / 5) * 5, 0, 0);",
+                  "const fin = new Date(inicio.getTime() + 60 * 60000);",
+                  "pm.collectionVariables.set(\"hu05_ana3_inicio\", inicio.toISOString());",
+                  "pm.collectionVariables.set(\"hu05_ana3_fin\", fin.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_ana3_disponibilidadId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "Horario de una reserva que Ana cancelará.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaServicioId}}\",\n  \"inicioAt\": \"{{hu05_ana3_inicio}}\",\n  \"finAt\": \"{{hu05_ana3_fin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-P8 · Preparar: Ana reserva el horario 3",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"hu05_ana3_reservaId\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Reserva 3 de Ana.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteAnaId}}\",\n  \"disponibilidadId\": \"{{hu05_ana3_disponibilidadId}}\",\n  \"notas\": \"Prueba Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CP-HU05-P9 · Preparar: Ana cancela la reserva 3",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu05_ana3_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu05_ana3_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "Cancela la reserva 3 para verificar que el historial incluye reservas canceladas."
+          }
+        },
+        {
+          "name": "CP-HU05-F2 · El historial incluye las reservas canceladas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "",
+                  "const reservas = body.reservas || [];",
+                  "// fecha y hora del historial vienen en UTC a partir del inicio del horario",
+                  "const clave = v => { const iso = pm.collectionVariables.get(v + \"_inicio\"); return iso ? iso.slice(0, 10) + \" \" + iso.slice(11, 16) : \"\"; };",
+                  "const reservaDe = v => reservas.find(r => r.fecha + \" \" + String(r.hora).slice(0, 5) === clave(v));",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"La reserva aparece en el historial\", () => pm.expect(reservaDe(\"hu05_ana3\"), \"no se encontró la reserva\").to.exist);",
+                  "pm.test(\"La reserva está en estado CANCELADA\", () => pm.expect(String((reservaDe(\"hu05_ana3\") || {}).estado).toUpperCase()).to.include(\"CANCELAD\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Cliente-Id",
+                "value": "{{clienteAnaId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservas",
+                "historial"
+              ]
+            },
+            "description": "**Camino feliz adicional.** La HU-05 indica que el cliente hace seguimiento a sus citas \"realizadas, canceladas o pendientes\"; este escenario no está en el documento CP-HU05.\n\n**Resultado esperado:** la reserva cancelada aparece en el historial con estado CANCELADA."
+          }
+        },
+        {
+          "name": "CP-HU05-E1 · Cliente sin reservas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"La lista de reservas está vacía\", () => pm.expect(body.reservas).to.be.an(\"array\").that.is.empty);",
+                  "pm.test(\"Muestra el mensaje \\\"No tienes reservas registradas\\\"\", () => pm.expect(body.message).to.eql(\"No tienes reservas registradas\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Cliente-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservas",
+                "historial"
+              ]
+            },
+            "description": "**Camino de excepción del documento.** Usa un cliente nuevo (id aleatorio) que no tiene reservas.\n\n**Resultado esperado:** 200 OK, lista vacía y el mensaje \"No tienes reservas registradas\"."
+          }
+        },
+        {
+          "name": "CP-HU05-E2 · Consultar sin identificar al cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservas/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservas",
+                "historial"
+              ]
+            },
+            "description": "**Criterio de rechazo:** no se proporciona el identificador del cliente.\n\n**Resultado esperado:** 400 Bad Request."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Limpieza – cancelar las reservas futuras de la corrida",
+      "description": "Cancela las reservas futuras que crearon los pasos de preparación, para que el catálogo quede con los horarios libres. Se omite cada petición si su caso no se ejecutó. Los horarios creados no se pueden borrar (la API no tiene ese endpoint) y la reserva sobre el horario pasado de CP-HU04 no se puede cancelar por diseño.",
+      "item": [
+        {
+          "name": "Limpieza · Cancelar la reserva de CP-HU02",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"hu02_reservaId\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La reserva de prueba quedó cancelada\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+                  "pm.collectionVariables.unset(\"hu02_reservaId\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu02_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu02_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "No es un escenario de prueba: deja los datos como estaban."
+          }
+        },
+        {
+          "name": "Limpieza · Cancelar la reserva de CP-HU03",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"hu03_reservaId\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La reserva de prueba quedó cancelada\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+                  "pm.collectionVariables.unset(\"hu03_reservaId\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu03_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu03_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "No es un escenario de prueba: deja los datos como estaban."
+          }
+        },
+        {
+          "name": "Limpieza · Cancelar la reserva de CP-HU04",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"hu04_luis_reservaId\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La reserva de prueba quedó cancelada\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+                  "pm.collectionVariables.unset(\"hu04_luis_reservaId\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu04_luis_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu04_luis_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "No es un escenario de prueba: deja los datos como estaban."
+          }
+        },
+        {
+          "name": "Limpieza · Cancelar la reserva de CP-HU05, reserva 1 de Ana",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"hu05_ana1_reservaId\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La reserva de prueba quedó cancelada\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+                  "pm.collectionVariables.unset(\"hu05_ana1_reservaId\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu05_ana1_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu05_ana1_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "No es un escenario de prueba: deja los datos como estaban."
+          }
+        },
+        {
+          "name": "Limpieza · Cancelar la reserva de CP-HU05, reserva 2 de Ana",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"hu05_ana2_reservaId\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La reserva de prueba quedó cancelada\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+                  "pm.collectionVariables.unset(\"hu05_ana2_reservaId\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu05_ana2_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu05_ana2_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "No es un escenario de prueba: deja los datos como estaban."
+          }
+        },
+        {
+          "name": "Limpieza · Cancelar la reserva de CP-HU05, reserva de Luis",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"hu05_luis_reservaId\")) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La reserva de prueba quedó cancelada\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+                  "pm.collectionVariables.unset(\"hu05_luis_reservaId\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/{{hu05_luis_reservaId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{hu05_luis_reservaId}}",
+                "cancel"
+              ]
+            },
+            "description": "No es un escenario de prueba: deja los datos como estaban."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": []
+}
