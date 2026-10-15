@@ -12,6 +12,7 @@ import java.util.UUID;
 public class AgendaServicioEntity {
 
     @Id
+    @Column(name = "id_agenda_servicio")
     private UUID id;
 
     @Column(name = "activo", nullable = false)

@@ -15,12 +15,13 @@ public class AvailabilityEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id_disponibilidad")
     private UUID id;
 
-    @Column(name = "agenda_servicio_id", nullable = false)
+    @Column(name = "id_agenda_servicio", nullable = false)
     private UUID agendaServicioId;
 
-    @Column(name = "estado_disponibilidad_id", nullable = false)
+    @Column(name = "id_estado_disponibilidad", nullable = false)
     private Integer estadoDisponibilidadId;
 
     @Column(name = "inicio_at", nullable = false)

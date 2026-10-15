@@ -23,28 +23,34 @@ public interface AvailabilityJpaRepository extends JpaRepository<AvailabilityEnt
 
     @Query(value = """
             SELECT
-                s.id AS serviceId,
+                s.id_servicio AS serviceId,
                 s.nombre AS service,
                 p.nombre_comercial AS provider,
-                d.id AS availabilityId,
+                d.id_disponibilidad AS availabilityId,
                 d.inicio_at AS inicioAt,
                 d.fin_at AS finAt
             FROM tbl_servicio s
-            INNER JOIN tbl_proveedor p ON p.id = s.proveedor_id
-            INNER JOIN tbl_servicio_sede ss ON ss.servicio_id = s.id
-            INNER JOIN tbl_agenda_servicio ag ON ag.servicio_sede_id = ss.id
-            INNER JOIN tbl_disponibilidad d ON d.agenda_servicio_id = ag.id
-            INNER JOIN tbl_estado_disponibilidad ed ON ed.id = d.estado_disponibilidad_id
+            INNER JOIN tbl_proveedor p ON p.id_proveedor = s.id_proveedor
+            INNER JOIN tbl_servicio_sede ss ON ss.id_servicio = s.id_servicio
+            INNER JOIN tbl_agenda_servicio ag ON ag.id_servicio_sede = ss.id_servicio_sede
+            INNER JOIN tbl_disponibilidad d ON d.id_agenda_servicio = ag.id_agenda_servicio
+            INNER JOIN tbl_estado_disponibilidad ed ON ed.id_estado_disponibilidad = d.id_estado_disponibilidad
             WHERE s.activo = true
               AND ag.activo = true
               AND UPPER(ed.codigo) = 'DISPONIBLE'
               AND NOT EXISTS (
                   SELECT 1
                   FROM tbl_ocupacion_disponibilidad od
-                  INNER JOIN tbl_reserva r ON r.id = od.reserva_id
-                  INNER JOIN tbl_estado_reserva er ON er.id = r.estado_reserva_id
-                  WHERE od.disponibilidad_id = d.id
+                  INNER JOIN tbl_reserva r ON r.id_reserva = od.id_reserva
+                  INNER JOIN tbl_estado_reserva er ON er.id_estado_reserva = r.id_estado_reserva
+                  WHERE od.id_disponibilidad = d.id_disponibilidad
                     AND UPPER(er.codigo) LIKE 'CONFIRMAD%'
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM tbl_dia_no_laborable dnl
+                  WHERE dnl.id_proveedor = p.id_proveedor
+                    AND dnl.fecha = CAST(d.inicio_at AT TIME ZONE 'America/Bogota' AS date)
               )
             ORDER BY s.nombre, p.nombre_comercial, d.inicio_at
             """, nativeQuery = true)
