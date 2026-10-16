@@ -28,12 +28,8 @@ import udea.fabrica.bookify.domain.port.out.CategoryCatalogOutputPort;
 import udea.fabrica.bookify.domain.port.out.CommonPasswordPort;
 import udea.fabrica.bookify.domain.port.out.NonWorkingDayOutputPort;
 import udea.fabrica.bookify.domain.port.out.PasswordEncoderPort;
-import udea.fabrica.bookify.domain.port.out.ServiceCatalogOutputPort;
 import udea.fabrica.bookify.domain.port.out.SearchServicesOutputPort;
 import udea.fabrica.bookify.domain.port.out.UserRepositoryPort;
-import udea.fabrica.bookify.domain.service.CreateAvailabilityService;
-import udea.fabrica.bookify.domain.service.GetBookingHistoryService;
-import udea.fabrica.bookify.domain.service.GetServiceCatalogService;
 import udea.fabrica.bookify.domain.service.NonWorkingDayService;
 import udea.fabrica.bookify.domain.service.RegisterUserService;
 import udea.fabrica.bookify.domain.service.SearchServicesService;
@@ -87,6 +83,8 @@ public class BeanConfiguration {
     public BlockingDateService blockingDateService(NonWorkingDayPort port) { 
         return new BlockingDateService(port); 
     }
+    
+    @Bean
     public RegisterUserInputPort registerUserInputPort(UserRepositoryPort userRepositoryPort,
                                                        PasswordEncoderPort passwordEncoderPort,
                                                        CommonPasswordPort commonPasswordPort) {
