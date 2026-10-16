@@ -27,7 +27,7 @@ public class ResourceAvailabilityPersistenceAdapter implements ResourceAvailabil
                 "SELECT r.id FROM RecursoEntity r WHERE r.proveedorId = :idProveedor AND r.id NOT IN " +
                 "(SELECT rr.recursoId FROM ReservaRecursoEntity rr " +
                 "JOIN rr.reserva res " +
-                "JOIN res.availability disp " + // <--- AQUÍ ESTÁ EL CAMBIO
+                "JOIN res.disponibilidad disp " + // <--- AQUÍ USAMOS EL NOMBRE EXACTO DE LA VARIABLE
                 "WHERE res.estado.codigo = 'CONFIRMADA' " +
                 "AND disp.inicioAt < :finAt AND disp.finAt > :inicioAt)", UUID.class)
                 .setParameter("idProveedor", providerId)
