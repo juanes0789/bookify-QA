@@ -21,8 +21,6 @@ import udea.fabrica.bookify.domain.service.GetServiceCatalogService;
 import udea.fabrica.bookify.domain.service.LoginService;
 import udea.fabrica.bookify.domain.service.BlockingDateService;
 import udea.fabrica.bookify.domain.port.in.LoginUseCase;
-import udea.fabrica.bookify.domain.port.in.PrevisualizarBloqueoFechaUseCase;
-import udea.fabrica.bookify.domain.port.in.ConfirmarBloqueoFechaUseCase;
 
 @Configuration
 public class BeanConfiguration {
@@ -52,8 +50,13 @@ public class BeanConfiguration {
         return new BookingService(bookingRepositoryPort, availabilityRepositoryPort);
     }
 
-    @Bean public LoginUseCase loginUseCase(LoginAccessControlPort controls, LoginAuthenticationPort authentication) { return new LoginService(controls, authentication); }
-    @Bean public BlockingDateService blockingDateService(NonWorkingDayPort port) { return new BlockingDateService(port); }
-    @Bean public PrevisualizarBloqueoFechaUseCase previsualizarBloqueoFechaUseCase(BlockingDateService service) { return service; }
-    @Bean public ConfirmarBloqueoFechaUseCase confirmarBloqueoFechaUseCase(BlockingDateService service) { return service; }
+    @Bean 
+    public LoginUseCase loginUseCase(LoginAccessControlPort controls, LoginAuthenticationPort authentication) { 
+        return new LoginService(controls, authentication); 
+    }
+    
+    @Bean 
+    public BlockingDateService blockingDateService(NonWorkingDayPort port) { 
+        return new BlockingDateService(port); 
+    }
 }
