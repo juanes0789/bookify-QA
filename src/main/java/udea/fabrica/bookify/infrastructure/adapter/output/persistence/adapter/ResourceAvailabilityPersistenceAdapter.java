@@ -40,9 +40,18 @@ public class ResourceAvailabilityPersistenceAdapter implements ResourceAvailabil
     
     @Override 
     public void assignResourceToBooking(UUID bookingId, UUID resourceId) {
-        ReservaRecursoEntity relation = new ReservaRecursoEntity(); 
-        relation.setReservaId(bookingId); 
-        relation.setRecursoId(resourceId); 
-        entityManager.persist(relation);
+        // 1. Verificamos si la reserva ya tiene un recurso asignado para evitar el doble INSERT
+        Long asignacionesPrevias = entityManager.createQuery(
+                "SELECT count(rr) FROM ReservaRecursoEntity rr WHERE rr.reservaId = :reservaId", Long.class)
+                .setParameter("reservaId", bookingId)
+                .getSingleResult();
+        
+        // 2. Solo insertamos si es la primera vez que se llama a este método para esta reserva
+        if (asignacionesPrevias == 0) {
+            ReservaRecursoEntity relation = new ReservaRecursoEntity(); 
+            relation.setReservaId(bookingId); 
+            relation.setRecursoId(resourceId); 
+            entityManager.persist(relation);
+        }
     }
 }
