@@ -87,7 +87,6 @@ public class BeanConfiguration {
     public BlockingDateService blockingDateService(NonWorkingDayPort port) { 
         return new BlockingDateService(port); 
     }
-}
     public RegisterUserInputPort registerUserInputPort(UserRepositoryPort userRepositoryPort,
                                                        PasswordEncoderPort passwordEncoderPort,
                                                        CommonPasswordPort commonPasswordPort) {

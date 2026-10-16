@@ -25,7 +25,7 @@ public class NonWorkingDayPersistenceAdapter implements NonWorkingDayPort {
         return ids;
     }
     @Override public NonWorkingDay save(NonWorkingDay day) {
-        DiaNoLaborableEntity e = new DiaNoLaborableEntity(); e.setId(day.id()); e.setProviderId(day.providerId()); e.setDate(day.date());
-        e.setReason(day.reason()); e.setCreatedByUserId(day.createdByUserId()); e.setCreatedAt(day.createdAt()); entityManager.persist(e); return day;
+        DiaNoLaborableEntity e = new DiaNoLaborableEntity(); e.setId(day.getId()); e.setProviderId(day.getProveedorId()); e.setDate(day.getFecha());
+        e.setReason(day.getMotivo()); e.setCreatedByUserId(day.getCreatedByUserId()); e.setCreatedAt(day.getFechaCreacion()); entityManager.persist(e); return day;
     }
 }

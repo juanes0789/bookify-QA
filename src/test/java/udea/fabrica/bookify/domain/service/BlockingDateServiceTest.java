@@ -46,9 +46,9 @@ class BlockingDateServiceTest {
         NonWorkingDay saved = service.confirmar(requested);
 
         // Assert
-        assertThat(saved.id()).isNotNull();
-        assertThat(saved.createdAt()).isBeforeOrEqualTo(OffsetDateTime.now());
-        verify(days).save(argThat(day -> day.id() != null && day.createdAt() != null));
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getFechaCreacion()).isBeforeOrEqualTo(OffsetDateTime.now());
+        verify(days).save(argThat(day -> day.getId() != null && day.getFechaCreacion() != null));
     }
 
     @Test

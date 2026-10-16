@@ -17,9 +17,9 @@ public class BlockingDateService implements PrevisualizarBloqueoFechaUseCase, Co
         require(providerId, date); return new BlockingPreview(providerId, date, days.findAffectedBookingIds(providerId, date));
     }
     @Override @Transactional public NonWorkingDay confirmar(NonWorkingDay day) {
-        require(day.providerId(), day.date());
-        NonWorkingDay toSave = new NonWorkingDay(day.id() == null ? UUID.randomUUID() : day.id(), day.providerId(), day.date(),
-                day.reason(), day.createdByUserId(), day.createdAt() == null ? OffsetDateTime.now() : day.createdAt());
+        require(day.getProveedorId(), day.getFecha());
+        NonWorkingDay toSave = new NonWorkingDay(day.getId() == null ? UUID.randomUUID() : day.getId(), day.getProveedorId(), day.getFecha(),
+                day.getMotivo(), day.getCreatedByUserId(), day.getFechaCreacion() == null ? OffsetDateTime.now() : day.getFechaCreacion());
         return days.save(toSave);
     }
     private void require(UUID providerId, LocalDate date) { if (providerId == null || date == null) throw new IllegalArgumentException("Proveedor y fecha son requeridos."); }

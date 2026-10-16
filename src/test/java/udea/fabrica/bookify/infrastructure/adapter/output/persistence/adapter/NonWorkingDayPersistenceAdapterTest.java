@@ -56,9 +56,9 @@ class NonWorkingDayPersistenceAdapterTest {
         // Assert
         ArgumentCaptor<DiaNoLaborableEntity> captor = ArgumentCaptor.forClass(DiaNoLaborableEntity.class);
         verify(entityManager).persist(captor.capture());
-        assertThat(captor.getValue().getId()).isEqualTo(day.id());
-        assertThat(captor.getValue().getProviderId()).isEqualTo(day.providerId());
-        assertThat(captor.getValue().getCreatedByUserId()).isEqualTo(day.createdByUserId());
+        assertThat(captor.getValue().getId()).isEqualTo(day.getId());
+        assertThat(captor.getValue().getProviderId()).isEqualTo(day.getProveedorId());
+        assertThat(captor.getValue().getCreatedByUserId()).isEqualTo(day.getCreatedByUserId());
         assertThat(saved).isEqualTo(day);
     }
 }
