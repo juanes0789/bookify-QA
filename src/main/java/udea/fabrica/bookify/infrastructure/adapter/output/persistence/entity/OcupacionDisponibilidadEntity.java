@@ -8,15 +8,14 @@ import lombok.*;
 @Entity 
 @Table(name="tbl_ocupacion_disponibilidad") 
 @IdClass(OcupacionDisponibilidadEntity.Key.class) 
-@Getter 
-@Setter 
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class OcupacionDisponibilidadEntity {
     @Id 
-    @Column(name="disponibilidad_id") 
+    @Column(name="id_disponibilidad")
     private UUID disponibilidadId; 
 
     @Id 
-    @Column(name="reserva_id") 
+    @Column(name="id_reserva")
     private UUID reservaId;
 
     @Column(name="fecha_ocupacion",nullable=false) 
@@ -24,7 +23,6 @@ public class OcupacionDisponibilidadEntity {
 
     @NoArgsConstructor 
     @AllArgsConstructor 
-    @EqualsAndHashCode 
     public static class Key implements Serializable { 
         private UUID disponibilidadId; 
         private UUID reservaId; 

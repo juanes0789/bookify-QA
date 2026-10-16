@@ -5,10 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Entity @Table(name = "tbl_control_acceso_login") @Getter @Setter
+@Entity @Table(name = "tbl_control_acceso_login") @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ControlAccesoLoginEntity {
     @Id @Column(name = "correo_normalizado", nullable = false) private String normalizedEmail;
     @Column(name = "intentos_fallidos", nullable = false) private int failedAttempts;

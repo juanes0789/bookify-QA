@@ -1,26 +1,25 @@
 package udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "tbl_disponibilidad")
-@Getter
-@Setter
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class AvailabilityEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id_disponibilidad")
     private UUID id;
 
-    @Column(name = "agenda_servicio_id", nullable = false)
+    @Column(name = "id_recurso", nullable = false)
     private UUID agendaServicioId;
 
-    @Column(name = "estado_disponibilidad_id", nullable = false)
+    @Column(name = "id_estado_disponibilidad", nullable = false)
     private Integer estadoDisponibilidadId;
 
     @Column(name = "inicio_at", nullable = false)
@@ -29,7 +28,7 @@ public class AvailabilityEntity {
     @Column(name = "fin_at", nullable = false)
     private OffsetDateTime finAt;
 
-    @Column(name = "creado_por_usuario_id")
+    @Column(name = "id_usuario_creador")
     private UUID creadoPorUsuarioId;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
@@ -37,4 +36,16 @@ public class AvailabilityEntity {
 
     @Column(name = "fecha_actualizacion", nullable = false)
     private OffsetDateTime fechaActualizacion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_recurso", referencedColumnName = "id_recurso", insertable = false, updatable = false)
+    private RecursoEntity recurso;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_estado_disponibilidad", referencedColumnName = "id_estado_disponibilidad", insertable = false, updatable = false)
+    private EstadoDisponibilidadEntity estadoDisponibilidad;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario_creador", referencedColumnName = "id_usuario", insertable = false, updatable = false)
+    private UsuarioEntity usuarioCreador;
 }
