@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter 
 public class EstadoReservaEntity { 
     @Id 
+    @Column(name="id_estado_reserva")
     private Integer id; 
     @Column(name="codigo",nullable=false) 
     private String codigo; 

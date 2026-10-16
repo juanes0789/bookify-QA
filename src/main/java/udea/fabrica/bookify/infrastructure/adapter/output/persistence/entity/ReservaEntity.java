@@ -11,7 +11,8 @@ import lombok.Setter;
 @Setter 
 public class ReservaEntity {
     @Id 
-    @GeneratedValue(strategy=GenerationType.UUID) 
+    @GeneratedValue(strategy=GenerationType.UUID)
+    @Column(name="id_reserva")
     private UUID id;
 
     @Column(name="cliente_id",nullable=false) 
@@ -34,4 +35,21 @@ public class ReservaEntity {
 
     @Column(name = "disponibilidad_id", nullable = false)
     private UUID disponibilidadId;
+
+    @Column(name = "id_servicio")
+    private UUID servicioId;
+
+    @Column(name = "id_proveedor")
+    private UUID proveedorId;
+
+    @Column(name = "inicio_at")
+    private OffsetDateTime inicioAt;
+
+    @Column(name = "fin_at")
+    private OffsetDateTime finAt;
+
+    /** Read-only association used by the resource-availability HQL. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "estado_reserva_id", referencedColumnName = "id_estado_reserva", insertable = false, updatable = false)
+    private EstadoReservaEntity estado;
 }

@@ -10,10 +10,19 @@ import udea.fabrica.bookify.domain.port.out.AvailabilityRepositoryPort;
 import udea.fabrica.bookify.domain.port.out.BookingHistoryOutputPort;
 import udea.fabrica.bookify.domain.port.out.BookingRepositoryPort;
 import udea.fabrica.bookify.domain.port.out.ServiceCatalogOutputPort;
+import udea.fabrica.bookify.domain.port.out.ResourceAvailabilityPort;
+import udea.fabrica.bookify.domain.port.out.LoginAccessControlPort;
+import udea.fabrica.bookify.domain.port.out.LoginAuthenticationPort;
+import udea.fabrica.bookify.domain.port.out.NonWorkingDayPort;
 import udea.fabrica.bookify.domain.service.BookingService;
 import udea.fabrica.bookify.domain.service.CreateAvailabilityService;
 import udea.fabrica.bookify.domain.service.GetBookingHistoryService;
 import udea.fabrica.bookify.domain.service.GetServiceCatalogService;
+import udea.fabrica.bookify.domain.service.LoginService;
+import udea.fabrica.bookify.domain.service.BlockingDateService;
+import udea.fabrica.bookify.domain.port.in.LoginUseCase;
+import udea.fabrica.bookify.domain.port.in.PrevisualizarBloqueoFechaUseCase;
+import udea.fabrica.bookify.domain.port.in.ConfirmarBloqueoFechaUseCase;
 
 @Configuration
 public class BeanConfiguration {
@@ -34,7 +43,17 @@ public class BeanConfiguration {
     }
 
     @Bean
+    public BookingService bookingService(BookingRepositoryPort bookingRepositoryPort, AvailabilityRepositoryPort availabilityRepositoryPort, ResourceAvailabilityPort resourceAvailabilityPort) {
+        return new BookingService(bookingRepositoryPort, availabilityRepositoryPort, resourceAvailabilityPort);
+    }
+
+    /** Compatibility factory retained for callers of the Sprint 1 API. */
     public BookingService bookingService(BookingRepositoryPort bookingRepositoryPort, AvailabilityRepositoryPort availabilityRepositoryPort) {
         return new BookingService(bookingRepositoryPort, availabilityRepositoryPort);
     }
+
+    @Bean public LoginUseCase loginUseCase(LoginAccessControlPort controls, LoginAuthenticationPort authentication) { return new LoginService(controls, authentication); }
+    @Bean public BlockingDateService blockingDateService(NonWorkingDayPort port) { return new BlockingDateService(port); }
+    @Bean public PrevisualizarBloqueoFechaUseCase previsualizarBloqueoFechaUseCase(BlockingDateService service) { return service; }
+    @Bean public ConfirmarBloqueoFechaUseCase confirmarBloqueoFechaUseCase(BlockingDateService service) { return service; }
 }

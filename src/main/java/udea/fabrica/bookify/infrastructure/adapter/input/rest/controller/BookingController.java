@@ -24,6 +24,10 @@ public class BookingController {
         Booking b=new Booking();
         b.setClienteId(r.getClienteId());
         b.setAvailabilityId(r.getDisponibilidadId());
+        b.setServiceId(r.getServicioId());
+        b.setProviderId(r.getProveedorId());
+        b.setStartAt(r.getInicioAt());
+        b.setEndAt(r.getFinAt());
         b.setNotas(r.getNotas());
         return ResponseEntity.status(HttpStatus.CREATED).body(response(create.create(b)));
     }

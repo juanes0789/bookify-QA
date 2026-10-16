@@ -26,6 +26,10 @@ public class BookingPersistenceAdapter implements BookingRepositoryPort {
         e.setNotas(b.getNotas());
         e.setFechaCreacion(b.getFechaCreacion());
         e.setFechaActualizacion(b.getFechaActualizacion()); 
+        e.setServicioId(b.getServiceId());
+        e.setProveedorId(b.getProviderId());
+        e.setInicioAt(b.getStartAt());
+        e.setFinAt(b.getEndAt());
         
         if (e.getId() == null) em.persist(e); 
         else em.merge(e); 
@@ -47,6 +51,10 @@ public class BookingPersistenceAdapter implements BookingRepositoryPort {
         b.setNotas(e.getNotas());
         b.setFechaCreacion(e.getFechaCreacion());
         b.setFechaActualizacion(e.getFechaActualizacion());
+        b.setServiceId(e.getServicioId());
+        b.setProviderId(e.getProveedorId());
+        b.setStartAt(e.getInicioAt());
+        b.setEndAt(e.getFinAt());
         
         return Optional.of(b);
     }

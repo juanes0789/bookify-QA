@@ -2,9 +2,9 @@ package udea.fabrica.bookify.domain.model;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 public class Booking {
-    private UUID id, clienteId, availabilityId; 
+    private UUID id, clienteId, availabilityId, serviceId, providerId, resourceId;
     private Integer estadoReservaId; 
-    private OffsetDateTime fechaReserva, fechaCreacion, fechaActualizacion; 
+    private OffsetDateTime fechaReserva, fechaCreacion, fechaActualizacion, startAt, endAt;
     private String notas;
     public UUID getId(){
         return id;
@@ -53,5 +53,15 @@ public class Booking {
     } 
     public void setFechaActualizacion(OffsetDateTime v){
         fechaActualizacion=v;
-    } 
+    }
+    public UUID getServiceId(){ return serviceId; }
+    public void setServiceId(UUID v){ serviceId=v; }
+    public UUID getProviderId(){ return providerId; }
+    public void setProviderId(UUID v){ providerId=v; }
+    public UUID getResourceId(){ return resourceId; }
+    public void setResourceId(UUID v){ resourceId=v; }
+    public OffsetDateTime getStartAt(){ return startAt; }
+    public void setStartAt(OffsetDateTime v){ startAt=v; }
+    public OffsetDateTime getEndAt(){ return endAt; }
+    public void setEndAt(OffsetDateTime v){ endAt=v; }
 }

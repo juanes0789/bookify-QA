@@ -9,7 +9,10 @@ import lombok.Setter;
 public class BookingRequestDto { 
     @NotNull 
     private UUID clienteId; 
-    @NotNull 
     private UUID disponibilidadId; 
+    private UUID servicioId;
+    private UUID proveedorId;
+    private java.time.OffsetDateTime inicioAt;
+    private java.time.OffsetDateTime finAt;
     private String notas; 
 }
