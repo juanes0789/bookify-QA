@@ -14,7 +14,7 @@ public interface BookingHistoryJpaRepository extends Repository<AvailabilityEnti
             SELECT
                 s.nombre AS service,
                 p.nombre_comercial AS provider,
-                d.inicio_at AS fechaHora,
+                d.fecha_reserva AS fechaHora,
                 er.codigo AS estado
             FROM tbl_reserva r
             INNER JOIN tbl_estado_reserva er ON er.id = r.estado_reserva_id
@@ -25,7 +25,7 @@ public interface BookingHistoryJpaRepository extends Repository<AvailabilityEnti
             INNER JOIN tbl_servicio s ON s.id = ss.servicio_id
             INNER JOIN tbl_proveedor p ON p.id = s.proveedor_id
             WHERE r.cliente_id = :clienteId
-            ORDER BY d.inicio_at DESC
+            ORDER BY d.fecha_reserva DESC
             """, nativeQuery = true)
     List<BookingHistoryProjection> findBookingHistoryByClientId(@Param("clienteId") UUID clienteId);
 }

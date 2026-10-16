@@ -13,7 +13,7 @@ public class LoginController {
     private final LoginUseCase login;
     public LoginController(LoginUseCase login) { this.login = login; }
     @PostMapping("/login") public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
-        LoginResult result = login.login(request.correo(), request.contrasena());
+        LoginResult result = login.login(request.correo(), request.password());
         return ResponseEntity.ok(new LoginResponseDto(result.authenticated(), result.blocked(), result.blockedUntil()));
     }
 }

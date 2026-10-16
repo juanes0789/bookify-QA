@@ -35,7 +35,7 @@ public interface AvailabilityJpaRepository extends JpaRepository<AvailabilityEnt
                 s.nombre AS service,
                 p.nombre_comercial AS provider,
                 d.id AS availabilityId,
-                d.inicio_at AS inicioAt,
+                d.fecha_reserva AS inicioAt,
                 d.fin_at AS finAt
             FROM tbl_servicio s
             INNER JOIN tbl_proveedor p ON p.id = s.proveedor_id
@@ -54,7 +54,7 @@ public interface AvailabilityJpaRepository extends JpaRepository<AvailabilityEnt
                   WHERE od.disponibilidad_id = d.id
                     AND UPPER(er.codigo) LIKE 'CONFIRMAD%'
               )
-            ORDER BY s.nombre, p.nombre_comercial, d.inicio_at
+            ORDER BY s.nombre, p.nombre_comercial, d.fecha_reserva
             """, nativeQuery = true)
     List<ServiceCatalogProjection> findAvailableServiceCatalog();
 }

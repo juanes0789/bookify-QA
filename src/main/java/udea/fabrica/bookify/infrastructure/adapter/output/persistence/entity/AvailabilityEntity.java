@@ -22,7 +22,7 @@ public class AvailabilityEntity {
     @Column(name = "id_estado_disponibilidad", nullable = false)
     private Integer estadoDisponibilidadId;
 
-    @Column(name = "inicio_at", nullable = false)
+    @Column(name = "fecha_reserva", nullable = false)
     private OffsetDateTime inicioAt;
 
     @Column(name = "fin_at", nullable = false)

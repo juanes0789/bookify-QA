@@ -19,7 +19,7 @@ public class NonWorkingDayPersistenceAdapter implements NonWorkingDayPort {
         @SuppressWarnings("unchecked")
         List<UUID> ids = entityManager.createNativeQuery("SELECT r.id_reserva FROM tbl_reserva r " +
                 "JOIN tbl_servicio s ON s.id_servicio = r.id_servicio " +
-                "WHERE s.id_proveedor = :providerId AND r.inicio_at >= :start AND r.inicio_at < :end")
+                "WHERE s.id_proveedor = :providerId AND r.fecha_reserva >= :start AND r.fecha_reserva < :end")
                 .setParameter("providerId", providerId).setParameter("start", date.atStartOfDay().atOffset(java.time.ZoneOffset.UTC))
                 .setParameter("end", date.plusDays(1).atStartOfDay().atOffset(java.time.ZoneOffset.UTC)).getResultList();
         return ids;
