@@ -16,11 +16,14 @@ public class AvailabilityEntity {
     @Column(name = "id_disponibilidad")
     private UUID id;
 
-    @Column(name = "id_recurso", nullable = false)
+    @Column(name = "id_agenda_servicio", nullable = false)
     private UUID agendaServicioId;
 
     @Column(name = "id_estado_disponibilidad", nullable = false)
     private Integer estadoDisponibilidadId;
+
+    @Column(name = "id_recurso")
+    private UUID recursoId;
 
     @Column(name = "inicio_at", nullable = false)
     private OffsetDateTime inicioAt;

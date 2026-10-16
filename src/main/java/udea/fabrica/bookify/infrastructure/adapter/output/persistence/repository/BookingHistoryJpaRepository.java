@@ -17,15 +17,15 @@ public interface BookingHistoryJpaRepository extends Repository<AvailabilityEnti
                 d.fecha_reserva AS fechaHora,
                 er.codigo AS estado
             FROM tbl_reserva r
-            INNER JOIN tbl_estado_reserva er ON er.id = r.estado_reserva_id
-            INNER JOIN tbl_ocupacion_disponibilidad od ON od.reserva_id = r.id
-            INNER JOIN tbl_disponibilidad d ON d.id = od.disponibilidad_id
-            INNER JOIN tbl_agenda_servicio ag ON ag.id = d.agenda_servicio_id
-            INNER JOIN tbl_servicio_sede ss ON ss.id = ag.servicio_sede_id
-            INNER JOIN tbl_servicio s ON s.id = ss.servicio_id
-            INNER JOIN tbl_proveedor p ON p.id = s.proveedor_id
-            WHERE r.cliente_id = :clienteId
-            ORDER BY d.fecha_reserva DESC
+            INNER JOIN tbl_estado_reserva er ON er.id_estado_reserva = r.id_estado_reserva
+            INNER JOIN tbl_ocupacion_disponibilidad od ON od.id_reserva = r.id_reserva
+            INNER JOIN tbl_disponibilidad d ON d.id_disponibilidad = od.id_disponibilidad
+            INNER JOIN tbl_agenda_servicio ag ON ag.id_agenda_servicio = d.id_agenda_servicio
+            INNER JOIN tbl_servicio_sede ss ON ss.id_servicio_sede = ag.id_servicio_sede
+            INNER JOIN tbl_servicio s ON s.id_servicio = ss.id_servicio
+            INNER JOIN tbl_proveedor p ON p.id_proveedor = s.id_proveedor
+            WHERE r.id_cliente = :clienteId
+            ORDER BY d.inicio_at DESC
             """, nativeQuery = true)
     List<BookingHistoryProjection> findBookingHistoryByClientId(@Param("clienteId") UUID clienteId);
 }
