@@ -52,6 +52,8 @@ public class ResourceAvailabilityPersistenceAdapter implements ResourceAvailabil
             relation.setReservaId(bookingId); 
             relation.setRecursoId(resourceId); 
             entityManager.persist(relation);
+
+            entityManager.flush();
         }
     }
 }
