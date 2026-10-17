@@ -2,7 +2,12 @@ package udea.fabrica.bookify.infrastructure.adapter.output.persistence.adapter;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import udea.fabrica.bookify.domain.model.AuthenticatedUser;
+import udea.fabrica.bookify.domain.model.UserRole;
 import udea.fabrica.bookify.domain.port.out.LoginAuthenticationPort;
 
 /**
@@ -13,11 +18,33 @@ import udea.fabrica.bookify.domain.port.out.LoginAuthenticationPort;
 @Component
 public class JpaLoginAuthenticationAdapter implements LoginAuthenticationPort {
     @PersistenceContext private EntityManager entityManager;
-    @Override public boolean credentialsMatch(String normalizedEmail, String password) {
-        if (password == null) return false;
-        Number matches = (Number) entityManager.createNativeQuery(
-                "select count(*) from tbl_usuario where lower(correo) = :correo and password_hash = :password")
-                .setParameter("correo", normalizedEmail).setParameter("password", password).getSingleResult();
-        return matches.longValue() == 1;
+    private final PasswordEncoder passwordEncoder;
+
+    public JpaLoginAuthenticationAdapter(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public Optional<AuthenticatedUser> authenticate(String normalizedEmail, String password) {
+        if (password == null) return Optional.empty();
+
+        @SuppressWarnings("unchecked")
+        var rows = entityManager.createNativeQuery("""
+                select u.id_usuario, u.correo, u.password_hash, r.codigo
+                from tbl_usuario u
+                join tbl_usuario_rol ur on ur.id_usuario = u.id_usuario
+                join tbl_rol r on r.id_rol = ur.id_rol
+                where lower(u.correo) = :correo
+                """)
+                .setParameter("correo", normalizedEmail)
+                .setMaxResults(1)
+                .getResultList();
+
+        if (rows.isEmpty()) return Optional.empty();
+        Object[] row = (Object[]) rows.get(0);
+        if (!passwordEncoder.matches(password, (String) row[2])) return Optional.empty();
+
+        return Optional.of(new AuthenticatedUser(
+                (UUID) row[0], (String) row[1], UserRole.valueOf((String) row[3])));
     }
 }

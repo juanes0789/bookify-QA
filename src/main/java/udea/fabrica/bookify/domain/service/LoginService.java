@@ -3,7 +3,6 @@ package udea.fabrica.bookify.domain.service;
 import java.time.OffsetDateTime;
 import java.util.Locale;
 import org.springframework.transaction.annotation.Transactional;
-import udea.fabrica.bookify.domain.exception.LoginBlockedException;
 import udea.fabrica.bookify.domain.model.LoginAccessControl;
 import udea.fabrica.bookify.domain.model.LoginResult;
 import udea.fabrica.bookify.domain.port.in.LoginUseCase;
@@ -22,14 +21,18 @@ public class LoginService implements LoginUseCase {
         String normalized = normalize(email); OffsetDateTime now = OffsetDateTime.now();
         LoginAccessControl previous = accessControls.findByNormalizedEmail(normalized)
                 .orElse(new LoginAccessControl(normalized, 0, null, null));
-        if (previous.isBlockedAt(now)) throw new LoginBlockedException(previous.blockedUntil());
-        if (authentication.credentialsMatch(normalized, password)) {
-            accessControls.clear(normalized); return new LoginResult(true, false, null);
+        if (previous.isBlockedAt(now)) {
+            return LoginResult.rejected(true, previous.blockedUntil());
+        }
+        var authenticatedUser = authentication.authenticate(normalized, password);
+        if (authenticatedUser.isPresent()) {
+            accessControls.clear(normalized);
+            return LoginResult.authenticated(authenticatedUser.get());
         }
         int attempts = previous.failedAttempts() + 1;
         OffsetDateTime until = attempts >= MAX_FAILED_ATTEMPTS ? now.plusMinutes(15) : null;
         accessControls.save(new LoginAccessControl(normalized, attempts, until, now));
-        return new LoginResult(false, until != null, until);
+        return LoginResult.rejected(until != null, until);
     }
     private String normalize(String email) {
         if (email == null || email.isBlank()) throw new IllegalArgumentException("El correo es requerido.");

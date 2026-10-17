@@ -6,13 +6,15 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import udea.fabrica.bookify.domain.exception.LoginBlockedException;
 import udea.fabrica.bookify.domain.model.LoginAccessControl;
 import udea.fabrica.bookify.domain.model.LoginResult;
+import udea.fabrica.bookify.domain.model.AuthenticatedUser;
+import udea.fabrica.bookify.domain.model.UserRole;
 import udea.fabrica.bookify.domain.port.out.LoginAccessControlPort;
 import udea.fabrica.bookify.domain.port.out.LoginAuthenticationPort;
 
@@ -28,7 +30,7 @@ class LoginServiceTest {
         String email = "  USER@BOOKIFY.CO  ";
         when(accessControls.findByNormalizedEmail("user@bookify.co"))
                 .thenReturn(Optional.of(new LoginAccessControl("user@bookify.co", 4, null, OffsetDateTime.now())));
-        when(authentication.credentialsMatch("user@bookify.co", "wrong-password")).thenReturn(false);
+        when(authentication.authenticate("user@bookify.co", "wrong-password")).thenReturn(Optional.empty());
 
         // Act
         LoginResult result = service.login(email, "wrong-password");
@@ -47,27 +49,32 @@ class LoginServiceTest {
     void shouldClearAccessControl_whenCredentialsAreValid() {
         // Arrange
         when(accessControls.findByNormalizedEmail("user@bookify.co")).thenReturn(Optional.empty());
-        when(authentication.credentialsMatch("user@bookify.co", "valid-password")).thenReturn(true);
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                UUID.randomUUID(), "user@bookify.co", UserRole.CLIENTE);
+        when(authentication.authenticate("user@bookify.co", "valid-password"))
+                .thenReturn(Optional.of(authenticatedUser));
 
         // Act
         LoginResult result = service.login("USER@BOOKIFY.CO", "valid-password");
 
         // Assert
-        assertThat(result).isEqualTo(new LoginResult(true, false, null));
+        assertThat(result).isEqualTo(LoginResult.authenticated(authenticatedUser));
         verify(accessControls).clear("user@bookify.co");
         verify(accessControls, never()).save(any());
     }
 
     @Test
-    void shouldThrowLoginBlockedException_whenCurrentBlockHasNotExpired() {
+    void shouldReturnBlockedResult_whenCurrentBlockHasNotExpired() {
         // Arrange
         OffsetDateTime blockedUntil = OffsetDateTime.now().plusMinutes(10);
         when(accessControls.findByNormalizedEmail("user@bookify.co"))
                 .thenReturn(Optional.of(new LoginAccessControl("user@bookify.co", 5, blockedUntil, OffsetDateTime.now())));
 
-        // Act / Assert
-        assertThatThrownBy(() -> service.login("user@bookify.co", "any-password"))
-                .isInstanceOf(LoginBlockedException.class);
+        // Act
+        LoginResult result = service.login("user@bookify.co", "any-password");
+
+        // Assert
+        assertThat(result).isEqualTo(LoginResult.rejected(true, blockedUntil));
         verifyNoInteractions(authentication);
         verify(accessControls, never()).save(any());
     }
