@@ -7,6 +7,7 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.Mer
 import udea.fabrica.bookify.infrastructure.adapter.output.persistence.repository.MerchantProfileSpringRepository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class MerchantProfilePersistenceAdapter implements MerchantProfileRepositoryPort {
@@ -18,7 +19,7 @@ public class MerchantProfilePersistenceAdapter implements MerchantProfileReposit
     }
 
     @Override
-    public boolean existsByUserId(Long userId) {
+    public boolean existsByUserId(UUID userId) {
         return repository.existsByUserId(userId);
     }
 
@@ -39,7 +40,7 @@ public class MerchantProfilePersistenceAdapter implements MerchantProfileReposit
     }
 
     @Override
-    public Optional<MerchantProfile> findByUserId(Long userId) {
+    public Optional<MerchantProfile> findByUserId(UUID userId) {
         return repository.findByUserId(userId)
                 .map(e -> MerchantProfile.builder()
                         .id(e.getId())

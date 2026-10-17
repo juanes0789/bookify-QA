@@ -1,6 +1,9 @@
 package udea.fabrica.bookify.infrastructure.adapter.input.rest.controller;
 
 import jakarta.validation.Valid;
+
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,8 +27,8 @@ public class ResourceController {
             @Valid @RequestBody CreateResourceRequest request,
             Authentication authentication) {
 
-        Long userId = Long.valueOf(authentication.getName());
-        String role = authentication.getAuthorities().iterator().next().getAuthority();
+        UUID userId = UUID.fromString(authentication.getName());
+        UUID role = UUID.fromString(authentication.getAuthorities().iterator().next().getAuthority());
 
         Resource resource = resourceUseCase.createResource(userId, role, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(resource);

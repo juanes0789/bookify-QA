@@ -1,5 +1,7 @@
 package udea.fabrica.bookify.domain.service;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import udea.fabrica.bookify.domain.exception.DomainConflictException;
 import udea.fabrica.bookify.domain.exception.DomainForbiddenException;
@@ -23,15 +25,15 @@ public class ResourceUseCaseImpl implements ResourceUseCase {
     }
 
     @Override
-    public Resource createResource(Long userId, String userRole, CreateResourceRequest request) {
-        if (!"PROVEEDOR".equalsIgnoreCase(userRole)) {
+    public Resource createResource(UUID userId, UUID userRole, CreateResourceRequest request) {
+        if (!"PROVEEDOR".equalsIgnoreCase(userRole.toString())) {
             throw new DomainForbiddenException("Acceso no autorizado para el rol asignado");
         }
 
         MerchantProfile profile = merchantProfileRepositoryPort.findByUserId(userId)
                 .orElseThrow(() -> new DomainConflictException("Primero debes crear tu perfil comercial"));
 
-        String typeUpper = request.getType().toUpperCase();
+        UUID typeUpper = request.getType();
         if (!"FISICO".equals(typeUpper) && !"HUMANO".equals(typeUpper)) {
             throw new IllegalArgumentException("El tipo de recurso debe ser FISICO o HUMANO");
         }
@@ -41,10 +43,9 @@ public class ResourceUseCaseImpl implements ResourceUseCase {
         }
 
         Resource resource = Resource.builder()
-                .merchantProfileId(profile.getId())
+                .id(profile.getId())
                 .name(request.getName().trim())
-                .type(typeUpper)
-                .active(true)
+                .resourceTypeId(typeUpper)
                 .build();
 
         return resourceRepositoryPort.save(resource);

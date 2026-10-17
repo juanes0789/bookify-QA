@@ -1,5 +1,7 @@
 package udea.fabrica.bookify.domain.model;
 
+import java.util.UUID;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,14 +10,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 public class MerchantProfile {
-    private Long id;
-    private Long userId;
+    private UUID id;
+    private UUID userId;
     private String businessName;
     private String category;
     private String address;
     private String phone;
 
-    public MerchantProfile(Long id, Long userId, String businessName, String category, String address, String phone) {
+    public MerchantProfile(UUID id, UUID userId, String businessName, String category, String address, String phone) {
         this.id = id;
         this.userId = userId;
         this.businessName = businessName;

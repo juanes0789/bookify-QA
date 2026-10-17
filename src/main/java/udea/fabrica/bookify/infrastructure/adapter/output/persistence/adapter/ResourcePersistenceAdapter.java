@@ -5,6 +5,7 @@ import udea.fabrica.bookify.domain.model.Resource;
 import udea.fabrica.bookify.domain.port.out.ResourceRepositoryPort;
 import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.ResourceEntity;
 import udea.fabrica.bookify.infrastructure.adapter.output.persistence.repository.ResourceSpringRepository;
+import java.util.UUID;
 
 @Component
 public class ResourcePersistenceAdapter implements ResourceRepositoryPort {
@@ -16,22 +17,25 @@ public class ResourcePersistenceAdapter implements ResourceRepositoryPort {
     }
 
     @Override
-    public boolean existsByMerchantProfileIdAndNameIgnoreCase(Long merchantProfileId, String name) {
+    public boolean existsByMerchantProfileIdAndNameIgnoreCase(UUID merchantProfileId, String name) {
         return repository.existsByMerchantProfileIdAndNameIgnoreCase(merchantProfileId, name);
     }
 
     @Override
     public Resource save(Resource resource) {
         ResourceEntity entity = ResourceEntity.builder()
-                .id(resource.getId())
-                .merchantProfileId(resource.getMerchantProfileId())
-                .name(resource.getName())
-                .type(resource.getType())
-                .active(resource.isActive())
+                .id_recurso(resource.id())
+                .merchantProfileId(resource.providerId())
+                .name(resource.name())
+                .type(resource.resourceTypeId())
                 .build();
 
         ResourceEntity saved = repository.save(entity);
-        resource.setId(saved.getId());
-        return resource;
+        return new Resource(
+            saved.getId_recurso(), 
+            resource.providerId(), 
+            resource.resourceTypeId(), 
+            resource.name()
+    );
     }
 }

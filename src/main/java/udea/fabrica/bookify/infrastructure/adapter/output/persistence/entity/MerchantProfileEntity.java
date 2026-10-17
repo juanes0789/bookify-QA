@@ -1,5 +1,7 @@
 package udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity;
 
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,10 +22,10 @@ import lombok.Setter;
 public class MerchantProfileEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(name = "usuario_id", nullable = false, unique = true)
-    private Long userId;
+    private UUID userId;
 
     @Column(name = "nombre_comercial", nullable = false, length = 100)
     private String businessName;
@@ -37,7 +39,7 @@ public class MerchantProfileEntity {
     @Column(nullable = false)
     private String phone;
 
-    public MerchantProfileEntity(Long id, Long userId, String businessName, String category, String address, String phone) {
+    public MerchantProfileEntity(UUID id, UUID userId, String businessName, String category, String address, String phone) {
         this.id = id;
         this.userId = userId;
         this.businessName = businessName;

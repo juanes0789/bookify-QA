@@ -11,6 +11,7 @@ import udea.fabrica.bookify.domain.port.out.PasswordEncoderPort;
 import udea.fabrica.bookify.domain.port.out.UserRepositoryPort;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -197,6 +198,21 @@ class RegisterUserServiceTest {
                     OffsetDateTime.now(),
                     OffsetDateTime.now()
             );
+        }
+
+        @Override
+        public Optional<User> findByEmail(String email) {
+            return emails.contains(email.toLowerCase()) ? Optional.of(new User(
+                    UUID.randomUUID(),
+                    "Nombre",
+                    "Apellido",
+                    email,
+                    null,
+                    UserRole.CLIENTE,
+                    true,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            )) : Optional.empty();
         }
     }
 }

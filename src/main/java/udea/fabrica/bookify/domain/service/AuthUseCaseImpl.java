@@ -30,17 +30,17 @@ public class AuthUseCaseImpl implements AuthUseCase {
         User user = userRepositoryPort.findByEmail(cleanEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Correo o contraseña incorrectos"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Correo o contraseña incorrectos");
         }
 
-        String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getRole());
+        String token = jwtService.generateToken(user.getId(), user.getCorreo(), user.getRol());
 
         return AuthResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
                 .expiresIn(3600L)
-                .role(user.getRole())
+                .role(user.getRol())
                 .build();
     }
 }    
