@@ -14,8 +14,9 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.repository
 import udea.fabrica.bookify.infrastructure.adapter.output.persistence.repository.RolJpaRepository;
 import udea.fabrica.bookify.infrastructure.adapter.output.persistence.repository.UserJpaRepository;
 import udea.fabrica.bookify.infrastructure.adapter.output.persistence.repository.UsuarioRolJpaRepository;
-
 import java.time.OffsetDateTime;
+
+import java.util.Optional;
 
 @Component
 public class UserPersistenceAdapter implements UserRepositoryPort {
@@ -66,4 +67,23 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
 
         return UserEntityMapper.toDomain(saved, user.getRol());
     }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return userJpaRepository.findByCorreoIgnoreCase(email)
+                .map(entity -> {
+                    return new User(
+                            entity.getId(),
+                            entity.getNombres(),
+                            entity.getApellidos(),
+                            entity.getCorreo(),
+                            entity.getPasswordHash(),
+                            UserRole.CLIENTE,
+                            true,
+                            entity.getFechaCreacion(),
+                            entity.getFechaActualizacion()
+                    );
+                });
+    }
+    
 }

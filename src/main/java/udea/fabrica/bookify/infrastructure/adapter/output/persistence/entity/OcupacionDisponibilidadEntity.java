@@ -1,8 +1,9 @@
 package udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity;
-import jakarta.persistence.*; 
-import java.io.Serializable; 
-import java.time.OffsetDateTime; 
-import java.util.UUID; 
+
+import jakarta.persistence.*;
+import java.io.Serializable;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.*;
 
 @Entity 
@@ -18,13 +19,20 @@ public class OcupacionDisponibilidadEntity {
     @Column(name="id_reserva")
     private UUID reservaId;
 
-    @Column(name="fecha_ocupacion",nullable=false) 
+    @Column(name="fecha_ocupacion", nullable=false)
     private OffsetDateTime fechaOcupacion;
 
-    @NoArgsConstructor 
-    @AllArgsConstructor 
-    public static class Key implements Serializable { 
-        private UUID disponibilidadId; 
-        private UUID reservaId; 
+    @NoArgsConstructor
+    @EqualsAndHashCode
+    @Getter
+    @Setter
+    public static class Key implements Serializable {
+        private UUID disponibilidadId;
+        private UUID reservaId;
+
+        public Key(UUID disponibilidadId, UUID reservaId) {
+            this.disponibilidadId = disponibilidadId;
+            this.reservaId = reservaId;
+        }
     }
 }
