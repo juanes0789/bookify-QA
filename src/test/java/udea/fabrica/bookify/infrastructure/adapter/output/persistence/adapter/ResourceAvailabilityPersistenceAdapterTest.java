@@ -19,6 +19,7 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.Res
 class ResourceAvailabilityPersistenceAdapterTest {
     @Mock private EntityManager entityManager;
     @Mock private TypedQuery<UUID> query;
+    @Mock private TypedQuery<Long> countQuery;
     @InjectMocks private ResourceAvailabilityPersistenceAdapter adapter;
 
     @Test
@@ -47,6 +48,7 @@ class ResourceAvailabilityPersistenceAdapterTest {
         // Arrange
         UUID bookingId = UUID.randomUUID();
         UUID resourceId = UUID.randomUUID();
+        stubPreviousAssignments(bookingId, 0L);
 
         // Act
         adapter.assignResourceToBooking(bookingId, resourceId);
@@ -54,7 +56,44 @@ class ResourceAvailabilityPersistenceAdapterTest {
         // Assert
         ArgumentCaptor<ReservaRecursoEntity> captor = ArgumentCaptor.forClass(ReservaRecursoEntity.class);
         verify(entityManager).persist(captor.capture());
+        verify(entityManager).flush();
         assertThat(captor.getValue().getReservaId()).isEqualTo(bookingId);
         assertThat(captor.getValue().getRecursoId()).isEqualTo(resourceId);
+    }
+
+    @Test
+    void shouldNotPersistAssignmentAgain_whenBookingAlreadyHasResource() {
+        // Arrange
+        UUID bookingId = UUID.randomUUID();
+        stubPreviousAssignments(bookingId, 1L);
+
+        // Act
+        adapter.assignResourceToBooking(bookingId, UUID.randomUUID());
+
+        // Assert
+        verify(entityManager, never()).persist(any());
+        verify(entityManager, never()).flush();
+    }
+
+    @Test
+    void shouldReturnEmpty_whenEveryResourceIsBooked() {
+        // Arrange
+        when(entityManager.createQuery(anyString(), eq(UUID.class))).thenReturn(query);
+        when(query.setParameter(anyString(), any())).thenReturn(query);
+        when(query.setMaxResults(1)).thenReturn(query);
+        when(query.getResultStream()).thenReturn(Stream.empty());
+        OffsetDateTime start = OffsetDateTime.now().plusHours(1);
+
+        // Act
+        var result = adapter.findAvailableResource(UUID.randomUUID(), start, start.plusHours(1));
+
+        // Assert
+        assertThat(result).isEmpty();
+    }
+
+    private void stubPreviousAssignments(UUID bookingId, long count) {
+        when(entityManager.createQuery(anyString(), eq(Long.class))).thenReturn(countQuery);
+        when(countQuery.setParameter("reservaId", bookingId)).thenReturn(countQuery);
+        when(countQuery.getSingleResult()).thenReturn(count);
     }
 }

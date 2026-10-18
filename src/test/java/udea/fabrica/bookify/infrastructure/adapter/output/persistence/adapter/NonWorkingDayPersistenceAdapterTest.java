@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.Query;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -60,5 +61,71 @@ class NonWorkingDayPersistenceAdapterTest {
         assertThat(captor.getValue().getProviderId()).isEqualTo(day.getProveedorId());
         assertThat(captor.getValue().getCreatedByUserId()).isEqualTo(day.getCreatedByUserId());
         assertThat(saved).isEqualTo(day);
+    }
+
+    @Test
+    void shouldReturnTrue_whenProviderAlreadyRegisteredTheDate() {
+        // Arrange
+        UUID providerId = UUID.randomUUID();
+        LocalDate date = LocalDate.of(2026, 12, 25);
+        stubCountQuery(providerId, date, 1L);
+
+        // Act
+        boolean exists = adapter.existsByProveedorIdAndFecha(providerId, date);
+
+        // Assert
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalse_whenDateIsNotMarkedAsNonWorkingDay() {
+        // Arrange
+        UUID providerId = UUID.randomUUID();
+        LocalDate date = LocalDate.of(2026, 12, 24);
+        stubCountQuery(providerId, date, 0L);
+
+        // Act
+        boolean nonWorkingDay = adapter.isNonWorkingDay(providerId, date);
+
+        // Assert
+        assertThat(nonWorkingDay).isFalse();
+    }
+
+    @Test
+    void shouldReturnProviderId_whenAgendaExists() {
+        // Arrange
+        UUID agendaId = UUID.randomUUID();
+        UUID providerId = UUID.randomUUID();
+        when(entityManager.createNativeQuery(anyString())).thenReturn(query);
+        when(query.setParameter("agendaId", agendaId)).thenReturn(query);
+        when(query.getSingleResult()).thenReturn(providerId);
+
+        // Act
+        UUID result = adapter.findProviderIdByAgendaServicioId(agendaId);
+
+        // Assert
+        assertThat(result).isEqualTo(providerId);
+    }
+
+    @Test
+    void shouldReturnNull_whenAgendaDoesNotExist() {
+        // Arrange
+        UUID agendaId = UUID.randomUUID();
+        when(entityManager.createNativeQuery(anyString())).thenReturn(query);
+        when(query.setParameter("agendaId", agendaId)).thenReturn(query);
+        when(query.getSingleResult()).thenThrow(new NoResultException("Sin agenda"));
+
+        // Act
+        UUID result = adapter.findProviderIdByAgendaServicioId(agendaId);
+
+        // Assert
+        assertThat(result).isNull();
+    }
+
+    private void stubCountQuery(UUID providerId, LocalDate date, long count) {
+        when(entityManager.createNativeQuery(anyString())).thenReturn(query);
+        when(query.setParameter("proveedorId", providerId)).thenReturn(query);
+        when(query.setParameter("fecha", date)).thenReturn(query);
+        when(query.getSingleResult()).thenReturn(count);
     }
 }

@@ -117,6 +117,19 @@ class UserPersistenceAdapterTest {
         when(rolJpaRepository.findByCodigo(code)).thenReturn(Optional.of(role));
     }
 
+    @Test
+    void shouldCheckEmailIgnoringCase_whenEmailExistenceIsQueried() {
+        // Arrange
+        when(userJpaRepository.existsByCorreoIgnoreCase("ANA@mail.com")).thenReturn(true);
+
+        // Act
+        boolean exists = adapter.existsByEmail("ANA@mail.com");
+
+        // Assert
+        assertThat(exists).isTrue();
+        verify(userJpaRepository).existsByCorreoIgnoreCase("ANA@mail.com");
+    }
+
     private User newUser(UserRole role) {
         OffsetDateTime now = OffsetDateTime.now();
         return new User(null, "Ana", "Gomez", "ana@mail.com", "hashed-password", role, true, now, now);
