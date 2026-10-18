@@ -7,7 +7,10 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import udea.fabrica.bookify.domain.model.MerchantProfile;
 import udea.fabrica.bookify.domain.port.in.MerchantProfileUseCase;
 import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.CreateMerchantProfileRequest;
@@ -28,7 +31,7 @@ public class MerchantProfileController {
             Authentication authentication) {
 
         UUID userId = UUID.fromString(authentication.getName());
-        UUID role = UUID.fromString(authentication.getAuthorities().iterator().next().getAuthority());
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
 
         MerchantProfile profile = merchantProfileUseCase.createProfile(userId, role, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(profile);

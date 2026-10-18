@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -42,10 +43,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // java:S112: HttpSecurity#build() declara Exception, así que el método no puede declarar otra más específica.
-    // java:S4502: la API es sin estado y recibe el JWT en la cabecera Authorization, sin cookies de sesión;
-    // el navegador no adjunta esa cabecera por sí solo, por lo que CSRF no aplica.
-    @SuppressWarnings({"java:S112", "java:S4502"})
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService)
             throws Exception {
@@ -59,44 +56,39 @@ public class SecurityConfig {
 
                 String header = request.getHeader("Authorization");
 
-                if (header == null) {
-                    LOG.warn("JWT: la petición {} no trae cabecera Authorization", request.getRequestURI());
-                } else if (!header.startsWith(BEARER_PREFIX)) {
-                    LOG.warn("JWT: la cabecera Authorization no empieza con 'Bearer '");
-                } else if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    authenticate(request, header.substring(BEARER_PREFIX.length()).trim());
+                if (header != null && header.startsWith(BEARER_PREFIX)
+                        && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    String token = header.substring(BEARER_PREFIX.length()).trim();
+                    try {
+                        Claims claims = jwtService.extractClaims(token);
+                        String subject = claims.getSubject();
+                        String rawRole = claims.get(ROLE_CLAIM, String.class);
+
+                        if (subject == null || rawRole == null || rawRole.isBlank()) {
+                            LOG.warn("JWT: token sin subject o sin claim '{}'", ROLE_CLAIM);
+                        } else {
+                            String role = rawRole.trim().toUpperCase();
+                            if (role.startsWith(ROLE_PREFIX)) {
+                                role = role.substring(ROLE_PREFIX.length());
+                            }
+
+                            UsernamePasswordAuthenticationToken authentication =
+                                    new UsernamePasswordAuthenticationToken(
+                                            subject,
+                                            token,
+                                            List.of(new SimpleGrantedAuthority(role)));
+                            authentication.setDetails(
+                                    new WebAuthenticationDetailsSource().buildDetails(request));
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        }
+                    } catch (JwtException | IllegalArgumentException ex) {
+                        LOG.warn("JWT: token rechazado -> {}: {}",
+                                ex.getClass().getSimpleName(), ex.getMessage());
+                        SecurityContextHolder.clearContext();
+                    }
                 }
 
                 filterChain.doFilter(request, response);
-            }
-
-            private void authenticate(HttpServletRequest request, String token) {
-                try {
-                    Claims claims = jwtService.extractClaims(token);
-                    String subject = claims.getSubject();
-                    String rawRole = claims.get(ROLE_CLAIM, String.class);
-
-                    if (subject == null || rawRole == null || rawRole.isBlank()) {
-                        LOG.warn("JWT: token válido pero sin subject o sin claim '{}' (subject={}, role={})",
-                                ROLE_CLAIM, subject, rawRole);
-                        return;
-                    }
-
-                    String role = normalizeRole(rawRole);
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    subject,
-                                    token,
-                                    List.of(new SimpleGrantedAuthority(role)));
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    LOG.info("JWT: usuario {} autenticado con rol {}", subject, role);
-                } catch (JwtException | IllegalArgumentException ex) {
-                    LOG.warn("JWT: token rechazado -> {}: {}",
-                            ex.getClass().getSimpleName(), ex.getMessage());
-                    SecurityContextHolder.clearContext();
-                }
             }
         };
 
@@ -105,8 +97,15 @@ public class SecurityConfig {
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/v1/auth/**").permitAll()
-                    .requestMatchers("/error").permitAll()
+                    .requestMatchers("/api/v1/auth/**", "/error").permitAll()
+                    .requestMatchers(HttpMethod.GET,
+                            "/api/v1/catalog/services",
+                            "/api/v1/catalog/services/search").permitAll()
+                    .requestMatchers("/api/v1/disponibilidades/**",
+                            "/api/v1/comercio/**",
+                            "/api/v1/dias-no-laborables/**").hasAuthority("PROVEEDOR")
+                    .requestMatchers("/api/v1/bookings/**",
+                            "/api/v1/reservas/**").hasAuthority("CLIENTE")
                     .anyRequest().authenticated())
             .exceptionHandling(ex -> ex
                     .authenticationEntryPoint((request, response, authException) ->
@@ -116,10 +115,5 @@ public class SecurityConfig {
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    private static String normalizeRole(String rawRole) {
-        String role = rawRole.trim().toUpperCase();
-        return role.startsWith(ROLE_PREFIX) ? role.substring(ROLE_PREFIX.length()) : role;
     }
 }

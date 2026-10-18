@@ -3,8 +3,6 @@ package udea.fabrica.bookify.domain.service;
 import java.util.Set;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import udea.fabrica.bookify.domain.exception.DomainConflictException;
 import udea.fabrica.bookify.domain.exception.DomainForbiddenException;
@@ -15,8 +13,6 @@ import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.Create
 
 @Service
 public class MerchantProfileUseCaseImpl implements MerchantProfileUseCase {
-
-    private static final Logger LOG = LoggerFactory.getLogger(MerchantProfileUseCaseImpl.class);
 
     private static final String MERCHANT_ROLE = "PROVEEDOR";
 
@@ -31,9 +27,8 @@ public class MerchantProfileUseCaseImpl implements MerchantProfileUseCase {
     }
 
     @Override
-    public MerchantProfile createProfile(UUID userId, UUID userRole, CreateMerchantProfileRequest request) {
-        if (!isMerchant(userRole)) {
-            LOG.warn("createProfile rechazado: userId={}, userRole recibido='{}'", userId, userRole);
+    public MerchantProfile createProfile(UUID userId, String userRole, CreateMerchantProfileRequest request) {
+        if (!MERCHANT_ROLE.equalsIgnoreCase(userRole)) {
             throw new DomainForbiddenException("Acceso no autorizado para el rol asignado");
         }
 
@@ -54,12 +49,5 @@ public class MerchantProfileUseCaseImpl implements MerchantProfileUseCase {
                 .build();
 
         return merchantProfileRepositoryPort.save(profile);
-    }
-
-    private boolean isMerchant(UUID userRole) {
-        if (userRole == null) {
-            return false;
-        }
-        return MERCHANT_ROLE.equals(userRole.toString().toUpperCase());
     }
 }

@@ -4,5 +4,5 @@ import java.util.UUID;
 
 import lombok.Builder;
 
-@Builder 
-public record Resource(UUID id, UUID providerId, UUID resourceTypeId, String name) { }
+@Builder
+public record Resource(UUID id, UUID providerId, String type, String name, String status) { }

@@ -7,7 +7,10 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import udea.fabrica.bookify.domain.model.Resource;
 import udea.fabrica.bookify.domain.port.in.ResourceUseCase;
 import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.CreateResourceRequest;
@@ -28,7 +31,7 @@ public class ResourceController {
             Authentication authentication) {
 
         UUID userId = UUID.fromString(authentication.getName());
-        UUID role = UUID.fromString(authentication.getAuthorities().iterator().next().getAuthority());
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
 
         Resource resource = resourceUseCase.createResource(userId, role, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(resource);

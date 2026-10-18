@@ -1,7 +1,5 @@
 package udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request;
 
-import java.util.UUID;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -13,5 +11,5 @@ public class CreateResourceRequest {
     private String name;
 
     @NotBlank(message = "El tipo de recurso es obligatorio")
-    private UUID type;
+    private String type;
 }

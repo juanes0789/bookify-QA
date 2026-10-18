@@ -1,5 +1,6 @@
 package udea.fabrica.bookify.domain.service;
 
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -15,37 +16,41 @@ import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.Create
 @Service
 public class ResourceUseCaseImpl implements ResourceUseCase {
 
+    private static final String MERCHANT_ROLE = "PROVEEDOR";
+    private static final Set<String> ALLOWED_TYPES = Set.of("FISICO", "HUMANO");
+
     private final ResourceRepositoryPort resourceRepositoryPort;
     private final MerchantProfileRepositoryPort merchantProfileRepositoryPort;
 
-    public ResourceUseCaseImpl(ResourceRepositoryPort resourceRepositoryPort, 
+    public ResourceUseCaseImpl(ResourceRepositoryPort resourceRepositoryPort,
                                MerchantProfileRepositoryPort merchantProfileRepositoryPort) {
         this.resourceRepositoryPort = resourceRepositoryPort;
         this.merchantProfileRepositoryPort = merchantProfileRepositoryPort;
     }
 
     @Override
-    public Resource createResource(UUID userId, UUID userRole, CreateResourceRequest request) {
-        if (!"PROVEEDOR".equalsIgnoreCase(userRole.toString())) {
+    public Resource createResource(UUID userId, String userRole, CreateResourceRequest request) {
+        if (!MERCHANT_ROLE.equalsIgnoreCase(userRole)) {
             throw new DomainForbiddenException("Acceso no autorizado para el rol asignado");
         }
 
         MerchantProfile profile = merchantProfileRepositoryPort.findByUserId(userId)
                 .orElseThrow(() -> new DomainConflictException("Primero debes crear tu perfil comercial"));
 
-        UUID typeUpper = request.getType();
-        if (!"FISICO".equals(typeUpper) && !"HUMANO".equals(typeUpper)) {
+        String type = request.getType().trim().toUpperCase();
+        if (!ALLOWED_TYPES.contains(type)) {
             throw new IllegalArgumentException("El tipo de recurso debe ser FISICO o HUMANO");
         }
 
-        if (resourceRepositoryPort.existsByMerchantProfileIdAndNameIgnoreCase(profile.getId(), request.getName().trim())) {
+        String name = request.getName().trim();
+        if (resourceRepositoryPort.existsByMerchantProfileIdAndNameIgnoreCase(profile.getId(), name)) {
             throw new DomainConflictException("Ya existe un recurso con ese nombre en tu comercio");
         }
 
         Resource resource = Resource.builder()
-                .id(profile.getId())
-                .name(request.getName().trim())
-                .resourceTypeId(typeUpper)
+                .providerId(profile.getId())
+                .type(type)
+                .name(name)
                 .build();
 
         return resourceRepositoryPort.save(resource);
