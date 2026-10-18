@@ -12,15 +12,9 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.Res
 @Component
 public class ResourceAvailabilityPersistenceAdapter implements ResourceAvailabilityPort {
     
-    @PersistenceContext 
+    @PersistenceContext
     private EntityManager entityManager;
-    
-    public ResourceAvailabilityPersistenceAdapter() { }
-    
-    public ResourceAvailabilityPersistenceAdapter(EntityManager entityManager) { 
-        this.entityManager = entityManager; 
-    }
-    
+
     @Override 
     public Optional<UUID> findAvailableResource(UUID providerId, OffsetDateTime startAt, OffsetDateTime endAt) {
         return entityManager.createQuery(

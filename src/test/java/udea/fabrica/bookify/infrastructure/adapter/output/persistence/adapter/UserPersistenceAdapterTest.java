@@ -85,8 +85,9 @@ class UserPersistenceAdapterTest {
     @Test
     void shouldThrowWhenActiveStatusDoesNotExist() {
         when(estadoUsuarioJpaRepository.findByCodigo("ACTIVO")).thenReturn(Optional.empty());
+        User client = newUser(UserRole.CLIENTE);
 
-        assertThatThrownBy(() -> adapter.save(newUser(UserRole.CLIENTE)))
+        assertThatThrownBy(() -> adapter.save(client))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Estado 'ACTIVO' no encontrado en la base de datos");
     }
@@ -95,8 +96,9 @@ class UserPersistenceAdapterTest {
     void shouldThrowWhenRoleDoesNotExist() {
         givenActiveStatus();
         when(rolJpaRepository.findByCodigo("PROVEEDOR")).thenReturn(Optional.empty());
+        User provider = newUser(UserRole.PROVEEDOR);
 
-        assertThatThrownBy(() -> adapter.save(newUser(UserRole.PROVEEDOR)))
+        assertThatThrownBy(() -> adapter.save(provider))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Rol 'PROVEEDOR' no encontrado en la base de datos");
     }

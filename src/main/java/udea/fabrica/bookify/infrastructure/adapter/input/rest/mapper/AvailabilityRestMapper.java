@@ -6,6 +6,8 @@ import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.response.Avail
 
 public class AvailabilityRestMapper {
 
+    private AvailabilityRestMapper() {}
+
     public static Availability toDomain(AvailabilityRequestDto dto) {
         if (dto == null) return null;
         Availability availability = new Availability();

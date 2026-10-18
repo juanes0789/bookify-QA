@@ -15,6 +15,8 @@ public class User {
     private OffsetDateTime fechaCreacion;
     private OffsetDateTime fechaActualizacion;
 
+    // java:S107: constructor completo que replica las columnas de tbl_usuario para los mappers.
+    @SuppressWarnings("java:S107")
     public User(UUID id, String nombres, String apellidos, String correo,
                 String passwordHash, UserRole rol, boolean activo,
                 OffsetDateTime fechaCreacion, OffsetDateTime fechaActualizacion) {

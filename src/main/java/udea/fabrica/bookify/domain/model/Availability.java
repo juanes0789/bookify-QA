@@ -15,6 +15,8 @@ public class Availability {
 
     public Availability() {}
 
+    // java:S107: constructor completo que replica las columnas de tbl_disponibilidad para los mappers.
+    @SuppressWarnings("java:S107")
     public Availability(UUID id, UUID agendaServicioId, Integer estadoDisponibilidadId,
                         OffsetDateTime inicioAt, OffsetDateTime finAt, UUID creadoPorUsuarioId,
                         OffsetDateTime fechaCreacion, OffsetDateTime fechaActualizacion) {

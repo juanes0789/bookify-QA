@@ -54,6 +54,7 @@ class BookingPersistenceAdapterTest {
         ReservaEntity existing = new ReservaEntity();
         existing.setId(bookingId);
         when(entityManager.find(ReservaEntity.class, bookingId)).thenReturn(existing);
+        when(entityManager.merge(existing)).thenReturn(existing);
 
         // Act
         Booking result = adapter.save(booking);

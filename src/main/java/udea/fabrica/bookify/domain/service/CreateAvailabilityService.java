@@ -28,6 +28,9 @@ public class CreateAvailabilityService implements CreateAvailabilityInputPort {
 
     @Override
     public Availability create(Availability availability) {
+        if (availability == null || availability.getInicioAt() == null || availability.getFinAt() == null) {
+            throw new IllegalArgumentException("La fecha/hora de inicio y fin son obligatorias.");
+        }
         if (!availability.getInicioAt().isBefore(availability.getFinAt())) {
             throw new IllegalArgumentException("La fecha/hora de inicio debe ser estrictamente anterior a la fecha/hora fin.");
         }

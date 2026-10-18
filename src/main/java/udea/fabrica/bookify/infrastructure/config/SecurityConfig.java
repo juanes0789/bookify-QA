@@ -42,6 +42,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    // java:S112: HttpSecurity#build() declara Exception, así que el método no puede declarar otra más específica.
+    // java:S4502: la API es sin estado y recibe el JWT en la cabecera Authorization, sin cookies de sesión;
+    // el navegador no adjunta esa cabecera por sí solo, por lo que CSRF no aplica.
+    @SuppressWarnings({"java:S112", "java:S4502"})
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService)
             throws Exception {
@@ -60,39 +64,39 @@ public class SecurityConfig {
                 } else if (!header.startsWith(BEARER_PREFIX)) {
                     LOG.warn("JWT: la cabecera Authorization no empieza con 'Bearer '");
                 } else if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    String token = header.substring(BEARER_PREFIX.length()).trim();
-                    try {
-                        Claims claims = jwtService.extractClaims(token);
-                        String subject = claims.getSubject();
-                        String rawRole = claims.get(ROLE_CLAIM, String.class);
-
-                        if (subject == null || rawRole == null || rawRole.isBlank()) {
-                            LOG.warn("JWT: token válido pero sin subject o sin claim '{}' (subject={}, role={})",
-                                    ROLE_CLAIM, subject, rawRole);
-                        } else {
-                            String role = rawRole.trim().toUpperCase();
-                            if (role.startsWith(ROLE_PREFIX)) {
-                                role = role.substring(ROLE_PREFIX.length());
-                            }
-
-                            UsernamePasswordAuthenticationToken authentication =
-                                    new UsernamePasswordAuthenticationToken(
-                                            subject,
-                                            token,
-                                            List.of(new SimpleGrantedAuthority(role)));
-                            authentication.setDetails(
-                                    new WebAuthenticationDetailsSource().buildDetails(request));
-                            SecurityContextHolder.getContext().setAuthentication(authentication);
-                            LOG.info("JWT: usuario {} autenticado con rol {}", subject, role);
-                        }
-                    } catch (JwtException | IllegalArgumentException ex) {
-                        LOG.warn("JWT: token rechazado -> {}: {}",
-                                ex.getClass().getSimpleName(), ex.getMessage());
-                        SecurityContextHolder.clearContext();
-                    }
+                    authenticate(request, header.substring(BEARER_PREFIX.length()).trim());
                 }
 
                 filterChain.doFilter(request, response);
+            }
+
+            private void authenticate(HttpServletRequest request, String token) {
+                try {
+                    Claims claims = jwtService.extractClaims(token);
+                    String subject = claims.getSubject();
+                    String rawRole = claims.get(ROLE_CLAIM, String.class);
+
+                    if (subject == null || rawRole == null || rawRole.isBlank()) {
+                        LOG.warn("JWT: token válido pero sin subject o sin claim '{}' (subject={}, role={})",
+                                ROLE_CLAIM, subject, rawRole);
+                        return;
+                    }
+
+                    String role = normalizeRole(rawRole);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    subject,
+                                    token,
+                                    List.of(new SimpleGrantedAuthority(role)));
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    LOG.info("JWT: usuario {} autenticado con rol {}", subject, role);
+                } catch (JwtException | IllegalArgumentException ex) {
+                    LOG.warn("JWT: token rechazado -> {}: {}",
+                            ex.getClass().getSimpleName(), ex.getMessage());
+                    SecurityContextHolder.clearContext();
+                }
             }
         };
 
@@ -112,5 +116,10 @@ public class SecurityConfig {
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private static String normalizeRole(String rawRole) {
+        String role = rawRole.trim().toUpperCase();
+        return role.startsWith(ROLE_PREFIX) ? role.substring(ROLE_PREFIX.length()) : role;
     }
 }

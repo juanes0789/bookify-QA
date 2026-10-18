@@ -9,6 +9,8 @@ import java.util.List;
 
 public class ServiceCatalogRestMapper {
 
+    private ServiceCatalogRestMapper() {}
+
     public static List<ServiceOfferResponseDto> toResponse(List<ServiceOffer> offers) {
         return offers.stream()
                 .map(ServiceCatalogRestMapper::toResponse)
