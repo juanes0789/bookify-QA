@@ -22,7 +22,7 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDto request) {
+    public ResponseEntity<Object> login(@Valid @RequestBody LoginRequestDto request) {
         LoginResult result = login.login(request.correo(), request.password());
         if (!result.authenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

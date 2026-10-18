@@ -32,7 +32,7 @@ public class BookingPersistenceAdapter implements BookingRepositoryPort {
         e.setFinAt(b.getEndAt());
         
         if (e.getId() == null) em.persist(e); 
-        else em.merge(e); 
+        else e = em.merge(e);
         
         b.setId(e.getId());
         return b; 

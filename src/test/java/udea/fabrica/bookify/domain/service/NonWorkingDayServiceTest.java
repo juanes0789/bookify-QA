@@ -69,8 +69,10 @@ class NonWorkingDayServiceTest {
 
     @Test
     void rejectsReasonLongerThan100Characters() {
-        assertThatThrownBy(() -> service.register(providerId,
-                LocalDate.now(ZoneId.of("America/Bogota")).plusDays(1), "x".repeat(101)))
+        LocalDate tomorrow = LocalDate.now(ZoneId.of("America/Bogota")).plusDays(1);
+        String tooLongReason = "x".repeat(101);
+
+        assertThatThrownBy(() -> service.register(providerId, tomorrow, tooLongReason))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("El motivo no puede exceder 100 caracteres");
         verify(outputPort, never()).save(any());

@@ -12,8 +12,6 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.Con
 @Component
 public class LoginAccessControlPersistenceAdapter implements LoginAccessControlPort {
     @PersistenceContext private EntityManager entityManager;
-    public LoginAccessControlPersistenceAdapter() { }
-    public LoginAccessControlPersistenceAdapter(EntityManager entityManager) { this.entityManager = entityManager; }
     @Override public Optional<LoginAccessControl> findByNormalizedEmail(String email) {
         return Optional.ofNullable(entityManager.find(ControlAccesoLoginEntity.class, email)).map(this::toDomain);
     }
@@ -23,7 +21,8 @@ public class LoginAccessControlPersistenceAdapter implements LoginAccessControlP
         if (entity == null) { entity = new ControlAccesoLoginEntity(); entity.setNormalizedEmail(control.normalizedEmail()); entity.setCreatedAt(now); }
         entity.setFailedAttempts(control.failedAttempts()); entity.setBlockedUntil(control.blockedUntil());
         entity.setLastFailedAttemptAt(control.lastFailedAttemptAt()); entity.setUpdatedAt(now);
-        if (entityManager.contains(entity)) entityManager.merge(entity); else entityManager.persist(entity);
+        // Una entidad administrada se sincroniza sola al confirmar la transacción; solo la nueva se persiste.
+        if (!entityManager.contains(entity)) entityManager.persist(entity);
     }
     @Override public void clear(String email) { entityManager.createQuery("delete from ControlAccesoLoginEntity c where c.normalizedEmail = :email").setParameter("email", email).executeUpdate(); }
     private LoginAccessControl toDomain(ControlAccesoLoginEntity e) { return new LoginAccessControl(e.getNormalizedEmail(), e.getFailedAttempts(), e.getBlockedUntil(), e.getLastFailedAttemptAt()); }

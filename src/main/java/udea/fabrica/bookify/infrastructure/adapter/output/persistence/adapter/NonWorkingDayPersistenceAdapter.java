@@ -14,8 +14,6 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.Dia
 @Component
 public class NonWorkingDayPersistenceAdapter implements NonWorkingDayPort, NonWorkingDayOutputPort {
     @PersistenceContext private EntityManager entityManager;
-    public NonWorkingDayPersistenceAdapter() { }
-    public NonWorkingDayPersistenceAdapter(EntityManager entityManager) { this.entityManager = entityManager; }
     @Override public List<UUID> findAffectedBookingIds(UUID providerId, LocalDate date) {
         @SuppressWarnings("unchecked")
         List<UUID> ids = entityManager.createNativeQuery("SELECT r.id_reserva FROM tbl_reserva r " +

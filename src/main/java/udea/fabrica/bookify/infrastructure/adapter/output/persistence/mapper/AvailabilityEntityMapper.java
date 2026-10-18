@@ -6,6 +6,8 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.Ava
 
 public class AvailabilityEntityMapper {
 
+    private AvailabilityEntityMapper() {}
+
     public static AvailabilityEntity toEntity(Availability domain) {
         if (domain == null) return null;
         AvailabilityEntity entity = new AvailabilityEntity();

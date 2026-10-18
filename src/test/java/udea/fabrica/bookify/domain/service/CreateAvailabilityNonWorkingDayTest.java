@@ -29,7 +29,9 @@ class CreateAvailabilityNonWorkingDayTest {
         availability.setInicioAt(OffsetDateTime.parse("2026-12-25T10:00:00-05:00"));
         availability.setFinAt(OffsetDateTime.parse("2026-12-25T10:30:00-05:00"));
 
-        assertThatThrownBy(() -> new CreateAvailabilityService(availabilityPort, nonWorkingDayPort).create(availability))
+        CreateAvailabilityService service = new CreateAvailabilityService(availabilityPort, nonWorkingDayPort);
+
+        assertThatThrownBy(() -> service.create(availability))
                 .isInstanceOf(NonWorkingDayConflictException.class)
                 .hasMessage("La fecha está marcada como no laborable");
         verify(availabilityPort, never()).save(any());

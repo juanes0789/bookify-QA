@@ -22,7 +22,8 @@ class CreateAvailabilityServiceTest {
 
     @Mock
     private AvailabilityOutputPort availabilityOutputPort;
-    private udea.fabrica.bookify.domain.port.out.NonWorkingDayOutputPort nonWorkingDayOutputPort = org.mockito.Mockito.mock(udea.fabrica.bookify.domain.port.out.NonWorkingDayOutputPort.class);
+    @Mock
+    private udea.fabrica.bookify.domain.port.out.NonWorkingDayOutputPort nonWorkingDayOutputPort;
 
     @Test
     void shouldRegisterAvailableScheduleForAnActiveServiceAgenda() {
@@ -50,11 +51,26 @@ class CreateAvailabilityServiceTest {
         when(availabilityOutputPort.existsActiveAgendaServicio(agendaServicioId)).thenReturn(true);
         when(availabilityOutputPort.existsOverlapping(agendaServicioId, availability.getInicioAt(), availability.getFinAt())).thenReturn(true);
 
-        assertThatThrownBy(() -> new CreateAvailabilityService(availabilityOutputPort, nonWorkingDayOutputPort).create(availability))
+        CreateAvailabilityService service = new CreateAvailabilityService(availabilityOutputPort, nonWorkingDayOutputPort);
+
+        assertThatThrownBy(() -> service.create(availability))
                 .isInstanceOf(AvailabilityOverlapException.class)
                 .hasMessage("El rango de horario ingresado se traslapa con un horario ya registrado.");
 
         verify(availabilityOutputPort, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectScheduleWithoutStartOrEnd() {
+        // Arrange
+        Availability withoutEnd = availability(UUID.randomUUID(), OffsetDateTime.now().plusDays(1), null);
+        CreateAvailabilityService service = new CreateAvailabilityService(availabilityOutputPort, nonWorkingDayOutputPort);
+
+        // Act / Assert
+        assertThatThrownBy(() -> service.create(withoutEnd))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("La fecha/hora de inicio y fin son obligatorias.");
+        verifyNoInteractions(availabilityOutputPort, nonWorkingDayOutputPort);
     }
 
     private Availability availability(UUID agendaServicioId, OffsetDateTime inicio, OffsetDateTime fin) {

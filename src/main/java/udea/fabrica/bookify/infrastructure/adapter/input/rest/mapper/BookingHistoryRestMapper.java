@@ -8,6 +8,8 @@ import java.util.List;
 
 public class BookingHistoryRestMapper {
 
+    private BookingHistoryRestMapper() {}
+
     private static final String EMPTY_HISTORY_MESSAGE = "No tienes reservas registradas";
 
     public static BookingHistoryListResponseDto toResponse(List<BookingHistory> bookings) {

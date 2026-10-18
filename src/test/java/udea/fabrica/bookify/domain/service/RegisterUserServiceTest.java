@@ -95,12 +95,16 @@ class RegisterUserServiceTest {
 
     @Test
     void shouldAcceptPasswordOfExactly15Characters() {
-        service.register(VALID_NAME, VALID_EMAIL, "a".repeat(15), "CLIENTE");
+        User user = service.register(VALID_NAME, VALID_EMAIL, "a".repeat(15), "CLIENTE");
+
+        assertThat(user.getId()).isNotNull();
     }
 
     @Test
     void shouldAcceptPasswordOfExactly64Characters() {
-        service.register(VALID_NAME, VALID_EMAIL, "a".repeat(64), "CLIENTE");
+        User user = service.register(VALID_NAME, VALID_EMAIL, "a".repeat(64), "CLIENTE");
+
+        assertThat(user.getId()).isNotNull();
     }
 
     // ─── Validaciones de contraseña ─────────────────────────────────────────────
@@ -114,7 +118,9 @@ class RegisterUserServiceTest {
 
     @Test
     void shouldRejectPasswordLongerThan64Characters() {
-        assertThatThrownBy(() -> service.register(VALID_NAME, VALID_EMAIL, "a".repeat(65), "CLIENTE"))
+        String tooLongPassword = "a".repeat(65);
+
+        assertThatThrownBy(() -> service.register(VALID_NAME, VALID_EMAIL, tooLongPassword, "CLIENTE"))
                 .isInstanceOf(InvalidPasswordException.class)
                 .hasMessage("debe tener entre 15 y 64 caracteres");
     }

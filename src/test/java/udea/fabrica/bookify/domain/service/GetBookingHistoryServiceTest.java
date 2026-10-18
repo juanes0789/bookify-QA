@@ -46,7 +46,9 @@ class GetBookingHistoryServiceTest {
     void shouldRejectMissingClientId() {
         BookingHistoryOutputPort outputPort = queriedClientId -> List.of();
 
-        assertThatThrownBy(() -> new GetBookingHistoryService(outputPort).getHistoryByClient(null))
+        GetBookingHistoryService service = new GetBookingHistoryService(outputPort);
+
+        assertThatThrownBy(() -> service.getHistoryByClient(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("El cliente es requerido para consultar el historial de reservas.");
     }
