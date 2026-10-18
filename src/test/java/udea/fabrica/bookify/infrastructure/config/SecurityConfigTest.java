@@ -30,11 +30,15 @@ import udea.fabrica.bookify.domain.model.UserRole;
 
 /**
  * Levanta solo SecurityConfig, JwtService y un controlador de prueba, sin base de datos,
- * para verificar el filtro JWT con la cadena de seguridad real.
+ * para verificar el filtro JWT y las reglas por rol con la cadena de seguridad real.
  */
 class SecurityConfigTest {
     private static final String PUBLIC_ENDPOINT = "/api/v1/auth/ping";
     private static final String PROTECTED_ENDPOINT = "/api/v1/privado";
+    private static final String CATALOG_ENDPOINT = "/api/v1/catalog/services";
+    private static final String SEARCH_ENDPOINT = "/api/v1/catalog/services/search";
+    private static final String PROVIDER_ENDPOINT = "/api/v1/comercio/perfil";
+    private static final String CLIENT_ENDPOINT = "/api/v1/reservas/mis";
 
     private AnnotationConfigWebApplicationContext context;
     private MockMvc mockMvc;
@@ -157,6 +161,81 @@ class SecurityConfigTest {
         assertThat(encoder.matches("MiContrasenaSegura2026!", hash)).isTrue();
     }
 
+    @Test
+    void shouldAllowCatalog_whenNoTokenIsSent() throws Exception {
+        // Arrange
+        var request = get(CATALOG_ENDPOINT);
+
+        // Act / Assert
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(content().string("catalogo"));
+    }
+
+    @Test
+    void shouldAllowSearch_whenNoTokenIsSent() throws Exception {
+        // Arrange
+        var request = get(SEARCH_ENDPOINT);
+
+        // Act / Assert
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(content().string("busqueda"));
+    }
+
+    @Test
+    void shouldReturn401_whenProviderEndpointIsCalledWithoutToken() throws Exception {
+        // Arrange
+        var request = get(PROVIDER_ENDPOINT);
+
+        // Act / Assert
+        mockMvc.perform(request).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldReturn403_whenClienteCallsProviderEndpoint() throws Exception {
+        // Arrange
+        String token = jwtService.generateToken(UUID.randomUUID(), "ana@mail.com", UserRole.CLIENTE);
+        var request = get(PROVIDER_ENDPOINT).header("Authorization", "Bearer " + token);
+
+        // Act / Assert
+        mockMvc.perform(request).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldAllowProviderEndpoint_whenRoleIsProveedor() throws Exception {
+        // Arrange
+        String token = jwtService.generateToken(UUID.randomUUID(), "carlos@barberia.com", UserRole.PROVEEDOR);
+        var request = get(PROVIDER_ENDPOINT).header("Authorization", "Bearer " + token);
+
+        // Act / Assert
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(content().string("proveedor"));
+    }
+
+    @Test
+    void shouldReturn403_whenProveedorCallsClientEndpoint() throws Exception {
+        // Arrange
+        String token = jwtService.generateToken(UUID.randomUUID(), "carlos@barberia.com", UserRole.PROVEEDOR);
+        var request = get(CLIENT_ENDPOINT).header("Authorization", "Bearer " + token);
+
+        // Act / Assert
+        mockMvc.perform(request).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldAllowClientEndpoint_whenRoleIsCliente() throws Exception {
+        // Arrange
+        String token = jwtService.generateToken(UUID.randomUUID(), "ana@mail.com", UserRole.CLIENTE);
+        var request = get(CLIENT_ENDPOINT).header("Authorization", "Bearer " + token);
+
+        // Act / Assert
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(content().string("cliente"));
+    }
+
     private String signedToken(String subject, String role, long millisToExpire) {
         String secret = (String) ReflectionTestUtils.getField(jwtService, "secretKey");
         var builder = Jwts.builder()
@@ -194,6 +273,26 @@ class SecurityConfigTest {
         String protectedEndpoint() {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             return authentication.getName() + "|" + authentication.getAuthorities().iterator().next().getAuthority();
+        }
+
+        @GetMapping(CATALOG_ENDPOINT)
+        String catalogEndpoint() {
+            return "catalogo";
+        }
+
+        @GetMapping(SEARCH_ENDPOINT)
+        String searchEndpoint() {
+            return "busqueda";
+        }
+
+        @GetMapping(PROVIDER_ENDPOINT)
+        String providerEndpoint() {
+            return "proveedor";
+        }
+
+        @GetMapping(CLIENT_ENDPOINT)
+        String clientEndpoint() {
+            return "cliente";
         }
     }
 }
