@@ -1,5 +1,7 @@
 package udea.fabrica.bookify.infrastructure.config;
 
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,6 +89,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DomainConflictException.class)
     public ResponseEntity<Map<String, String>> handleConflict(DomainConflictException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(LoginBlockedException.class)
+    public ResponseEntity<Map<String, String>> handleLoginBlocked(LoginBlockedException ex) {
+        long retryAfter = secondsUntil(ex.getBlockedUntil());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", Long.toString(retryAfter))
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    private long secondsUntil(OffsetDateTime blockedUntil) {
+        if (blockedUntil == null) {
+            return 0;
+        }
+        Duration remaining = Duration.between(OffsetDateTime.now(), blockedUntil);
+        if (remaining.isNegative() || remaining.isZero()) {
+            return 0;
+        }
+        return remaining.toSeconds() + (remaining.getNano() == 0 ? 0 : 1);
     }
 
     private ResponseEntity<Map<String, String>> build(HttpStatus status, String message) {

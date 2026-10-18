@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.UUID;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -67,6 +68,19 @@ class LoginControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.authenticated").value(false))
                 .andExpect(jsonPath("$.accessToken").doesNotExist());
+        verify(jwtService, never()).generateToken(any(), any(), any());
+    }
+
+    @Test
+    void shouldReturn429AndRetryAfter_whenAccountIsBlocked() throws Exception {
+        when(loginUseCase.login("ana@mail.com", "ContrasenaIncorrecta2026"))
+                .thenReturn(LoginResult.rejected(true, OffsetDateTime.now().plusSeconds(60)));
+
+        mockMvc.perform(post(ENDPOINT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("ana@mail.com", "ContrasenaIncorrecta2026")))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"));
         verify(jwtService, never()).generateToken(any(), any(), any());
     }
 

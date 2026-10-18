@@ -42,6 +42,12 @@ class NonWorkingDayPersistenceAdapterTest {
         // Assert
         assertThat(result).containsExactlyElementsOf(bookingIds);
         verify(query).setParameter("providerId", providerId);
+        ArgumentCaptor<OffsetDateTime> start = ArgumentCaptor.forClass(OffsetDateTime.class);
+        ArgumentCaptor<OffsetDateTime> end = ArgumentCaptor.forClass(OffsetDateTime.class);
+        verify(query).setParameter(eq("start"), start.capture());
+        verify(query).setParameter(eq("end"), end.capture());
+        assertThat(start.getValue()).isEqualTo(date.atStartOfDay().atOffset(java.time.ZoneOffset.ofHours(-5)));
+        assertThat(end.getValue()).isEqualTo(date.plusDays(1).atStartOfDay().atOffset(java.time.ZoneOffset.ofHours(-5)));
         verify(query).getResultList();
     }
 

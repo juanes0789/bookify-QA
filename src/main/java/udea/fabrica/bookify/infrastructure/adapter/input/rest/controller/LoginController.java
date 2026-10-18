@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import udea.fabrica.bookify.domain.model.LoginResult;
+import udea.fabrica.bookify.domain.exception.LoginBlockedException;
 import udea.fabrica.bookify.domain.port.in.LoginUseCase;
 import udea.fabrica.bookify.infrastructure.config.JwtService;
 import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.LoginRequestDto;
@@ -25,6 +26,9 @@ public class LoginController {
     public ResponseEntity<Object> login(@Valid @RequestBody LoginRequestDto request) {
         LoginResult result = login.login(request.correo(), request.password());
         if (!result.authenticated()) {
+            if (result.blocked()) {
+                throw new LoginBlockedException(result.blockedUntil());
+            }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new LoginResponseDto(false, result.blocked(), result.blockedUntil()));
         }

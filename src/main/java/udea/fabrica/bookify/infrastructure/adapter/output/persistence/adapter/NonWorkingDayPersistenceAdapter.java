@@ -3,6 +3,7 @@ package udea.fabrica.bookify.infrastructure.adapter.output.persistence.adapter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -13,14 +14,18 @@ import udea.fabrica.bookify.infrastructure.adapter.output.persistence.entity.Dia
 
 @Component
 public class NonWorkingDayPersistenceAdapter implements NonWorkingDayPort, NonWorkingDayOutputPort {
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Bogota");
+
     @PersistenceContext private EntityManager entityManager;
     @Override public List<UUID> findAffectedBookingIds(UUID providerId, LocalDate date) {
         @SuppressWarnings("unchecked")
         List<UUID> ids = entityManager.createNativeQuery("SELECT r.id_reserva FROM tbl_reserva r " +
                 "JOIN tbl_servicio s ON s.id_servicio = r.id_servicio " +
                 "WHERE s.id_proveedor = :providerId AND r.fecha_reserva >= :start AND r.fecha_reserva < :end")
-                .setParameter("providerId", providerId).setParameter("start", date.atStartOfDay().atOffset(java.time.ZoneOffset.UTC))
-                .setParameter("end", date.plusDays(1).atStartOfDay().atOffset(java.time.ZoneOffset.UTC)).getResultList();
+                .setParameter("providerId", providerId)
+                .setParameter("start", date.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime())
+                .setParameter("end", date.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime())
+                .getResultList();
         return ids;
     }
     @Override public NonWorkingDay save(NonWorkingDay day) {

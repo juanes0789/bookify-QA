@@ -14,6 +14,9 @@ import udea.fabrica.bookify.domain.exception.InvalidPasswordException;
 import udea.fabrica.bookify.domain.exception.InvalidSearchCriteriaException;
 import udea.fabrica.bookify.domain.exception.NonWorkingDayConflictException;
 import udea.fabrica.bookify.domain.exception.PastDateException;
+import udea.fabrica.bookify.domain.exception.LoginBlockedException;
+
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -137,5 +140,15 @@ class GlobalExceptionHandlerTest {
         assertThat(forbidden.getBody()).containsEntry("error", "Acceso no autorizado para el rol asignado");
         assertThat(conflict.getStatusCode().value()).isEqualTo(409);
         assertThat(conflict.getBody()).containsEntry("error", "Ya tienes un perfil comercial registrado");
+    }
+
+    @Test
+    void shouldReturnRetryAfterHeader_whenLoginIsBlocked() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+        var response = handler.handleLoginBlocked(new LoginBlockedException(OffsetDateTime.now().plusSeconds(60)));
+
+        assertThat(response.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(Long.parseLong(response.getHeaders().getFirst("Retry-After"))).isBetween(59L, 60L);
     }
 }
