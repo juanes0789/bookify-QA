@@ -32,12 +32,12 @@ public class MerchantProfileUseCaseImpl implements MerchantProfileUseCase {
             throw new DomainForbiddenException("Acceso no autorizado para el rol asignado");
         }
 
-        if (merchantProfileRepositoryPort.existsByUserId(userId)) {
-            throw new DomainConflictException("Ya tienes un perfil comercial registrado");
-        }
-
         if (!ALLOWED_CATEGORIES.contains(request.getCategory())) {
             throw new IllegalArgumentException("Categoría inválida. Las válidas son: " + ALLOWED_CATEGORIES);
+        }
+
+        if (merchantProfileRepositoryPort.existsByUserId(userId)) {
+            throw new DomainConflictException("Ya tienes un perfil comercial registrado");
         }
 
         MerchantProfile profile = MerchantProfile.builder()
