@@ -48,7 +48,8 @@ public class BookingService implements CreateBookingUseCase, CancelBookingUseCas
         OffsetDateTime now = OffsetDateTime.now();
         booking.setResourceId(resourceId); booking.setEstadoReservaId(reservationStatus("CONFIRMADA"));
         booking.setFechaReserva(now); booking.setFechaCreacion(now); booking.setFechaActualizacion(now);
-        Booking saved = bookings.save(booking); 
+        Booking saved = bookings.save(booking);
+        resources.assignResourceToBooking(saved.getId(), resourceId);
         return saved;
     }
 
