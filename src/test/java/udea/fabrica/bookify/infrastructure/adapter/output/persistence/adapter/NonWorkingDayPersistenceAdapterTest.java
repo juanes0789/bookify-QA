@@ -54,19 +54,29 @@ class NonWorkingDayPersistenceAdapterTest {
     @Test
     void shouldMapDomainDayToEntity_whenSaving() {
         // Arrange
-        NonWorkingDay day = new NonWorkingDay(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now().plusDays(1),
+        UUID expectedId = UUID.randomUUID();
+        NonWorkingDay day = new NonWorkingDay(expectedId, UUID.randomUUID(), LocalDate.now().plusDays(1),
                 "Mantenimiento", UUID.randomUUID(), OffsetDateTime.now());
+
+        DiaNoLaborableEntity mergedEntity = new DiaNoLaborableEntity();
+        mergedEntity.setId(expectedId);
+        mergedEntity.setProviderId(day.getProveedorId());
+        mergedEntity.setDate(day.getFecha());
+        mergedEntity.setReason(day.getMotivo());
+        mergedEntity.setCreatedByUserId(day.getCreatedByUserId());
+        mergedEntity.setCreatedAt(day.getFechaCreacion());
+        when(entityManager.merge(any(DiaNoLaborableEntity.class))).thenReturn(mergedEntity);
 
         // Act
         NonWorkingDay saved = adapter.save(day);
 
         // Assert
         ArgumentCaptor<DiaNoLaborableEntity> captor = ArgumentCaptor.forClass(DiaNoLaborableEntity.class);
-        verify(entityManager).persist(captor.capture());
-        assertThat(captor.getValue().getId()).isEqualTo(day.getId());
+        verify(entityManager).merge(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(expectedId);
         assertThat(captor.getValue().getProviderId()).isEqualTo(day.getProveedorId());
         assertThat(captor.getValue().getCreatedByUserId()).isEqualTo(day.getCreatedByUserId());
-        assertThat(saved).isEqualTo(day);
+        assertThat(saved.getId()).isEqualTo(expectedId);
     }
 
     @Test

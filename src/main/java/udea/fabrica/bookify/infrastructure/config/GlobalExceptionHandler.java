@@ -53,6 +53,16 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of(ERROR_KEY, message, MESSAGE_KEY, message));
         }
+        if (causeMessage != null && (causeMessage.contains("tbl_dia_no_laborable_proveedor_id_fkey")
+                || causeMessage.contains("tbl_dia_no_laborable_creado_por_usuario_id_fkey"))) {
+            String message = "El proveedor o usuario especificado no existe";
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(ERROR_KEY, message, MESSAGE_KEY, message));
+        }
+        if (causeMessage != null && causeMessage.contains("correo")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of(ERROR_KEY, "El correo ya está registrado", MESSAGE_KEY, "El correo ya está registrado"));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of(ERROR_KEY, "El correo ya está registrado", MESSAGE_KEY, "El correo ya está registrado"));
     }

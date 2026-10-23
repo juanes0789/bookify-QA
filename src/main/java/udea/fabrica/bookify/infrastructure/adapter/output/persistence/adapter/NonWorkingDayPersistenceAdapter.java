@@ -28,9 +28,19 @@ public class NonWorkingDayPersistenceAdapter implements NonWorkingDayPort, NonWo
                 .getResultList();
         return ids;
     }
-    @Override public NonWorkingDay save(NonWorkingDay day) {
-        DiaNoLaborableEntity e = new DiaNoLaborableEntity(); e.setId(day.getId()); e.setProviderId(day.getProveedorId()); e.setDate(day.getFecha());
-        e.setReason(day.getMotivo()); e.setCreatedByUserId(day.getCreatedByUserId()); e.setCreatedAt(day.getFechaCreacion()); entityManager.persist(e); return day;
+    @Override
+    public NonWorkingDay save(NonWorkingDay day) {
+        DiaNoLaborableEntity e = new DiaNoLaborableEntity();
+        e.setId(day.getId());
+        e.setProviderId(day.getProveedorId());
+        e.setDate(day.getFecha());
+        e.setReason(day.getMotivo());
+        e.setCreatedByUserId(day.getCreatedByUserId());
+        e.setCreatedAt(day.getFechaCreacion());
+        // merge() gestiona entidades que ya poseen identificador asignado manualmente
+        DiaNoLaborableEntity saved = entityManager.merge(e);
+        day.setId(saved.getId());
+        return day;
     }
     @Override
     public boolean existsByProveedorIdAndFecha(UUID proveedorId, LocalDate fecha) {
