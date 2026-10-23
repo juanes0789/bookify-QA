@@ -54,29 +54,28 @@ class NonWorkingDayPersistenceAdapterTest {
     @Test
     void shouldMapDomainDayToEntity_whenSaving() {
         // Arrange
-        UUID expectedId = UUID.randomUUID();
-        NonWorkingDay day = new NonWorkingDay(expectedId, UUID.randomUUID(), LocalDate.now().plusDays(1),
-                "Mantenimiento", UUID.randomUUID(), OffsetDateTime.now());
+        UUID generatedId = UUID.randomUUID();
+        UUID providerId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        NonWorkingDay day = new NonWorkingDay(null, providerId, LocalDate.now().plusDays(1),
+                "Mantenimiento", userId, OffsetDateTime.now());
 
-        DiaNoLaborableEntity mergedEntity = new DiaNoLaborableEntity();
-        mergedEntity.setId(expectedId);
-        mergedEntity.setProviderId(day.getProveedorId());
-        mergedEntity.setDate(day.getFecha());
-        mergedEntity.setReason(day.getMotivo());
-        mergedEntity.setCreatedByUserId(day.getCreatedByUserId());
-        mergedEntity.setCreatedAt(day.getFechaCreacion());
-        when(entityManager.merge(any(DiaNoLaborableEntity.class))).thenReturn(mergedEntity);
+        doAnswer(invocation -> {
+            DiaNoLaborableEntity entity = invocation.getArgument(0);
+            entity.setId(generatedId); // Simula la asignación de ID por parte de Hibernate/JPA
+            return null;
+        }).when(entityManager).persist(any(DiaNoLaborableEntity.class));
 
         // Act
         NonWorkingDay saved = adapter.save(day);
 
-        // Assert
+        // Assert: verify persist() fue llamado y los campos funcionales son correctos
         ArgumentCaptor<DiaNoLaborableEntity> captor = ArgumentCaptor.forClass(DiaNoLaborableEntity.class);
-        verify(entityManager).merge(captor.capture());
-        assertThat(captor.getValue().getId()).isEqualTo(expectedId);
-        assertThat(captor.getValue().getProviderId()).isEqualTo(day.getProveedorId());
-        assertThat(captor.getValue().getCreatedByUserId()).isEqualTo(day.getCreatedByUserId());
-        assertThat(saved.getId()).isEqualTo(expectedId);
+        verify(entityManager).persist(captor.capture());
+        assertThat(captor.getValue().getProviderId()).isEqualTo(providerId);
+        assertThat(captor.getValue().getCreatedByUserId()).isEqualTo(userId);
+        // El ID generado por Hibernate se propaga de vuelta al objeto de dominio
+        assertThat(saved.getId()).isEqualTo(generatedId);
     }
 
     @Test

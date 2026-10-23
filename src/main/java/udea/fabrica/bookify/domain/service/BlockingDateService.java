@@ -18,7 +18,7 @@ public class BlockingDateService implements PrevisualizarBloqueoFechaUseCase, Co
     }
     @Override @Transactional public NonWorkingDay confirmar(NonWorkingDay day) {
         require(day.getProveedorId(), day.getFecha());
-        NonWorkingDay toSave = new NonWorkingDay(day.getId() == null ? UUID.randomUUID() : day.getId(), day.getProveedorId(), day.getFecha(),
+        NonWorkingDay toSave = new NonWorkingDay(null, day.getProveedorId(), day.getFecha(),
                 day.getMotivo(), day.getCreatedByUserId(), day.getFechaCreacion() == null ? OffsetDateTime.now() : day.getFechaCreacion());
         return days.save(toSave);
     }

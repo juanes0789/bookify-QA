@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import udea.fabrica.bookify.domain.model.NonWorkingDay;
 import udea.fabrica.bookify.domain.port.out.NonWorkingDayOutputPort;
 import udea.fabrica.bookify.domain.port.out.NonWorkingDayPort;
@@ -29,17 +30,19 @@ public class NonWorkingDayPersistenceAdapter implements NonWorkingDayPort, NonWo
         return ids;
     }
     @Override
+    @Transactional
     public NonWorkingDay save(NonWorkingDay day) {
         DiaNoLaborableEntity e = new DiaNoLaborableEntity();
-        e.setId(day.getId());
+        // IMPORTANTE: NO se setea el ID. Con @GeneratedValue, el ID debe quedar null
+        // para que Hibernate lo reconozca como entidad nueva (transient) y genere el UUID.
         e.setProviderId(day.getProveedorId());
         e.setDate(day.getFecha());
         e.setReason(day.getMotivo());
         e.setCreatedByUserId(day.getCreatedByUserId());
         e.setCreatedAt(day.getFechaCreacion());
-        // merge() gestiona entidades que ya poseen identificador asignado manualmente
-        DiaNoLaborableEntity saved = entityManager.merge(e);
-        day.setId(saved.getId());
+        entityManager.persist(e);
+        // Hibernate asigna el UUID generado en e.getId() tras el persist
+        day.setId(e.getId());
         return day;
     }
     @Override
