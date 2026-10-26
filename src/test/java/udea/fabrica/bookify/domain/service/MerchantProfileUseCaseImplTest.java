@@ -43,9 +43,10 @@ class MerchantProfileUseCaseImplTest {
     void shouldThrowForbidden_whenRoleIsCliente() {
         // Arrange
         UUID userId = UUID.randomUUID();
+        CreateMerchantProfileRequest request = validRequest();
 
         // Act + Assert
-        assertThatThrownBy(() -> useCase.createProfile(userId, "CLIENTE", validRequest()))
+        assertThatThrownBy(() -> useCase.createProfile(userId, "CLIENTE", request))
                 .isInstanceOf(DomainForbiddenException.class);
         verifyNoInteractions(repositoryPort);
     }
@@ -54,9 +55,10 @@ class MerchantProfileUseCaseImplTest {
     void shouldThrowForbidden_whenRoleIsNull() {
         // Arrange
         UUID userId = UUID.randomUUID();
+        CreateMerchantProfileRequest request = validRequest();
 
         // Act + Assert
-        assertThatThrownBy(() -> useCase.createProfile(userId, null, validRequest()))
+        assertThatThrownBy(() -> useCase.createProfile(userId, null, request))
                 .isInstanceOf(DomainForbiddenException.class);
     }
 
@@ -79,9 +81,10 @@ class MerchantProfileUseCaseImplTest {
         // Arrange
         UUID userId = UUID.randomUUID();
         when(repositoryPort.existsByUserId(userId)).thenReturn(true);
+        CreateMerchantProfileRequest request = validRequest();
 
         // Act + Assert
-        assertThatThrownBy(() -> useCase.createProfile(userId, "PROVEEDOR", validRequest()))
+        assertThatThrownBy(() -> useCase.createProfile(userId, "PROVEEDOR", request))
                 .isInstanceOf(DomainConflictException.class);
         verify(repositoryPort, never()).save(any(MerchantProfile.class));
     }

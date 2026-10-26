@@ -43,7 +43,11 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    // java:S112: HttpSecurity#build() declara Exception, así que el método no puede declarar otra más específica.
+    // java:S4502: la API es sin estado y recibe el JWT en la cabecera Authorization, sin cookies de sesión;
+    // el navegador no adjunta esa cabecera por sí solo, por lo que CSRF no aplica.
     @Bean
+    @SuppressWarnings({"java:S112", "java:S4502"})
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService)
             throws Exception {
 
