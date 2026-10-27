@@ -1,0 +1,44 @@
+{
+ "hu06_rol_invalido": [
+  400,
+  {
+   "error": "Rol no válido"
+  }
+ ],
+ "hu06_nombre_vacio": [
+  400,
+  {
+   "timestamp": "2026-10-27T02:05:26.902Z",
+   "status": 400,
+   "error": "Bad Request",
+   "path": "/api/v1/auth/register"
+  }
+ ],
+ "hu08_quinto": [
+  429,
+  {
+   "error": "La cuenta está bloqueada temporalmente."
+  },
+  {
+   "retry-after": "898"
+  }
+ ],
+ "reserva_a_nombre_de_otro": [
+  500,
+  {
+   "timestamp": "2026-10-27T02:05:43.021Z",
+   "status": 500,
+   "error": "Internal Server Error",
+   "path": "/api/v1/bookings"
+  }
+ ],
+ "doble_reserva": [
+  500,
+  {
+   "timestamp": "2026-10-27T02:05:43.756Z",
+   "status": 500,
+   "error": "Internal Server Error",
+   "path": "/api/v1/bookings"
+  }
+ ]
+}
