@@ -1,0 +1,1666 @@
+{
+  "ejecucion_utc": "2026-10-27T02:04:08.952405+00:00",
+  "base": "https://bookify-pb92.onrender.com",
+  "sufijo": "1027020248",
+  "resultados": [
+    {
+      "cp": "CP-HU06",
+      "esc": "F1",
+      "desc": "Registrar una cuenta de cliente",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Ana QA Gómez",
+        "correo": "qa.s2.cliente.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "201; rol CLIENTE; id, nombre, correo y rol sin contraseña",
+      "status": 201,
+      "respuesta": {
+        "id": "ee86a322-8fe4-44a5-a700-2a783f7e89ce",
+        "nombre": "Ana QA Gómez",
+        "correo": "qa.s2.cliente.1027020248@bookify-qa.test",
+        "rol": "CLIENTE"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:02:52Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "F2",
+      "desc": "Registrar una cuenta de proveedor",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Carlos QA Barbería",
+        "correo": "qa.s2.proveedor.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "PROVEEDOR"
+      },
+      "esperado": "201; rol PROVEEDOR",
+      "status": 201,
+      "respuesta": {
+        "id": "88224493-8d97-4569-b2ef-870b55f71c65",
+        "nombre": "Carlos QA Barbería",
+        "correo": "qa.s2.proveedor.1027020248@bookify-qa.test",
+        "rol": "PROVEEDOR"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:02:54Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E1",
+      "desc": "Correo ya registrado (en mayúsculas)",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Ana Repetida",
+        "correo": "QA.S2.CLIENTE.1027020248@BOOKIFY-QA.TEST",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "409; «El correo ya está registrado»",
+      "status": 409,
+      "respuesta": {
+        "mensaje": "El correo ya está registrado",
+        "error": "El correo ya está registrado"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:02:57Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E2a",
+      "desc": "Contraseña de 8 caracteres",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Prueba Clave",
+        "correo": "qa.s2.pwde2a.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "400; el mensaje indica «entre 15 y 64»",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "debe tener entre 15 y 64 caracteres",
+        "motivo": "debe tener entre 15 y 64 caracteres",
+        "error": "debe tener entre 15 y 64 caracteres"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:02:58Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E2b",
+      "desc": "Contraseña de 65 caracteres",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Prueba Clave",
+        "correo": "qa.s2.pwde2b.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "400; el mensaje indica «entre 15 y 64»",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "debe tener entre 15 y 64 caracteres",
+        "motivo": "debe tener entre 15 y 64 caracteres",
+        "error": "debe tener entre 15 y 64 caracteres"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:02:58Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E2c",
+      "desc": "Contraseña común",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Prueba Clave",
+        "correo": "qa.s2.pwde2c.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "400; el mensaje indica «común»",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "es una contraseña común o comprometida",
+        "motivo": "es una contraseña común o comprometida",
+        "error": "es una contraseña común o comprometida"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:02:58Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E2d",
+      "desc": "Contraseña que contiene el correo",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Prueba Clave",
+        "correo": "qa.s2.pwde2d.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "400; el mensaje indica «correo»",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "no puede contener tu correo",
+        "motivo": "no puede contener tu correo",
+        "error": "no puede contener tu correo"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:02:58Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E3",
+      "desc": "Rol inexistente",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Prueba Rol",
+        "correo": "qa.s2.rol.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "ADMINISTRADOR"
+      },
+      "esperado": "400; indica el campo inválido",
+      "status": 400,
+      "respuesta": {
+        "error": "Rol no válido"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "Responde «Rol no válido».",
+      "hora_utc": "2026-10-27T02:02:59Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E4",
+      "desc": "Correo con formato inválido",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "Prueba Correo",
+        "correo": "ana-arroba-mail",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "400; la respuesta lista los campos inválidos",
+      "status": 400,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:00.193Z",
+        "status": 400,
+        "error": "Bad Request",
+        "path": "/api/v1/auth/register"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Responde 400 genérico de Spring, sin indicar el campo inválido.",
+      "hora_utc": "2026-10-27T02:03:00Z"
+    },
+    {
+      "cp": "CP-HU06",
+      "esc": "E5",
+      "desc": "Nombre vacío",
+      "request": "POST /api/v1/auth/register",
+      "body": {
+        "nombre": "",
+        "correo": "qa.s2.nombre.1027020248@bookify-qa.test",
+        "contrasena": "***",
+        "rol": "CLIENTE"
+      },
+      "esperado": "400; la respuesta lista los campos inválidos",
+      "status": 400,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:01.087Z",
+        "status": 400,
+        "error": "Bad Request",
+        "path": "/api/v1/auth/register"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Responde 400 genérico de Spring, sin indicar el campo inválido.",
+      "hora_utc": "2026-10-27T02:03:01Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "F1",
+      "desc": "Iniciar sesión como proveedor",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.proveedor.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "200; Bearer, expiresIn 3600, rol PROVEEDOR",
+      "status": 200,
+      "respuesta": {
+        "accessToken": "<jwt-de-prueba-redactado>",
+        "tokenType": "Bearer",
+        "expiresIn": 3600,
+        "role": "PROVEEDOR"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:05Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "F2",
+      "desc": "Iniciar sesión como cliente",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.cliente.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "200; rol CLIENTE",
+      "status": 200,
+      "respuesta": {
+        "accessToken": "<jwt-de-prueba-redactado>",
+        "tokenType": "Bearer",
+        "expiresIn": 3600,
+        "role": "CLIENTE"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:07Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "E1",
+      "desc": "Contraseña incorrecta",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.cliente.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "401; «Correo o contraseña incorrectos»",
+      "status": 401,
+      "respuesta": {
+        "authenticated": false,
+        "blocked": false,
+        "blockedUntil": null
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:13Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "E2",
+      "desc": "Correo no registrado",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.nadie.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "401; mismo mensaje que E1",
+      "status": 401,
+      "respuesta": {
+        "authenticated": false,
+        "blocked": false,
+        "blockedUntil": null
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:13Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "E3",
+      "desc": "Campos obligatorios vacíos",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "",
+        "password": "***"
+      },
+      "esperado": "400",
+      "status": 400,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:14.370Z",
+        "status": 400,
+        "error": "Bad Request",
+        "path": "/api/v1/auth/login"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:14Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "E4",
+      "desc": "Cuenta inactiva",
+      "request": "",
+      "body": null,
+      "esperado": "403",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "No hay API para inactivar una cuenta ni una cuenta inactiva en los datos de prueba.",
+      "hora_utc": "2026-10-27T02:03:14Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "E5",
+      "desc": "Endpoint protegido sin token",
+      "request": "POST /api/v1/bookings",
+      "body": {
+        "clienteId": "11111111-1111-1111-1111-111111111111"
+      },
+      "esperado": "401",
+      "status": 401,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:14Z"
+    },
+    {
+      "cp": "CP-HU07",
+      "esc": "E6",
+      "desc": "Token CLIENTE en endpoint de proveedor",
+      "request": "POST /api/v1/disponibilidades",
+      "body": {
+        "agendaServicioId": "6f085c7d-a713-4657-9fbf-17c914609768",
+        "inicioAt": "2027-03-01T15:00:00Z",
+        "finAt": "2027-03-01T16:00:00Z"
+      },
+      "esperado": "403",
+      "status": 403,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:15Z"
+    },
+    {
+      "cp": "CP-HU08",
+      "esc": "F1",
+      "desc": "Bloquear al quinto intento fallido",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.bloqueo.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "Intentos 1-4: 401. Quinto: 429, Retry-After 900, «Demasiados intentos fallidos. Intenta de nuevo en 15 minutos»",
+      "status": 429,
+      "respuesta": {
+        "error": "La cuenta está bloqueada temporalmente."
+      },
+      "retry_after": "898 (verificado en sonda_verificacion.json)",
+      "resultado": "No pasa",
+      "nota": "Retry-After presente (≈900 s), pero el mensaje es «La cuenta está bloqueada temporalmente.» y no el del criterio. Ver #177.",
+      "hora_utc": "2026-10-27T02:03:34Z"
+    },
+    {
+      "cp": "CP-HU08",
+      "esc": "E1",
+      "desc": "Credenciales correctas durante el bloqueo",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.bloqueo.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "429; informa los minutos restantes; no entrega token",
+      "status": 429,
+      "respuesta": {
+        "error": "La cuenta está bloqueada temporalmente."
+      },
+      "retry_after": "898 (verificado en sonda_verificacion.json)",
+      "resultado": "No pasa",
+      "nota": "Responde 429 sin indicar los minutos restantes. Ver #177.",
+      "hora_utc": "2026-10-27T02:03:34Z"
+    },
+    {
+      "cp": "CP-HU08",
+      "esc": "F2",
+      "desc": "Acceso al terminar el bloqueo",
+      "request": "",
+      "body": null,
+      "esperado": "200 y contador en cero",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "La duración (15 min) está fija en LoginService; no es configurable por propiedades como pide la regla de HU-08.",
+      "hora_utc": "2026-10-27T02:03:34Z"
+    },
+    {
+      "cp": "CP-HU08",
+      "esc": "E2",
+      "desc": "Un inicio exitoso reinicia el contador",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.reinicio.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "3 fallos 401, inicio correcto 200, nuevo fallo 401 (no 429)",
+      "status": 401,
+      "respuesta": {
+        "authenticated": false,
+        "blocked": false,
+        "blockedUntil": null
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "fallos: [401, 401, 401], inicio: 200",
+      "hora_utc": "2026-10-27T02:03:46Z"
+    },
+    {
+      "cp": "CP-HU08",
+      "esc": "E3",
+      "desc": "Mismo bloqueo para un correo no registrado",
+      "request": "POST /api/v1/auth/login",
+      "body": {
+        "correo": "qa.s2.fantasma.1027020248@bookify-qa.test",
+        "password": "***"
+      },
+      "esperado": "Quinto intento: 429, igual que una cuenta existente",
+      "status": 429,
+      "respuesta": {
+        "error": "La cuenta está bloqueada temporalmente."
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "intentos 1-4: [401, 401, 401, 401]",
+      "hora_utc": "2026-10-27T02:03:49Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "E4a",
+      "desc": "Crear perfil sin token",
+      "request": "POST /api/v1/comercio/perfil",
+      "body": {
+        "businessName": "Barbería QA 1027020248",
+        "category": "Barbería y belleza",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "esperado": "401",
+      "status": 401,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:49Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "E4b",
+      "desc": "Crear perfil con token de cliente",
+      "request": "POST /api/v1/comercio/perfil",
+      "body": {
+        "businessName": "Barbería QA 1027020248",
+        "category": "Barbería y belleza",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "esperado": "403",
+      "status": 403,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:49Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "E1",
+      "desc": "Perfil sin nombre comercial",
+      "request": "POST /api/v1/comercio/perfil",
+      "body": {
+        "businessName": "",
+        "category": "Barbería y belleza",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "esperado": "400; indica el campo faltante",
+      "status": 400,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:50.588Z",
+        "status": 400,
+        "error": "Bad Request",
+        "path": "/api/v1/comercio/perfil"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Responde 400 genérico de Spring, sin indicar el campo faltante.",
+      "hora_utc": "2026-10-27T02:03:50Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "E2",
+      "desc": "Perfil sin categoría",
+      "request": "POST /api/v1/comercio/perfil",
+      "body": {
+        "businessName": "Barbería QA 1027020248",
+        "category": "",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "esperado": "400; indica el campo faltante",
+      "status": 400,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:50.986Z",
+        "status": 400,
+        "error": "Bad Request",
+        "path": "/api/v1/comercio/perfil"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Responde 400 genérico de Spring, sin indicar el campo faltante.",
+      "hora_utc": "2026-10-27T02:03:50Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "E5",
+      "desc": "Categoría fuera del catálogo",
+      "request": "POST /api/v1/comercio/perfil",
+      "body": {
+        "businessName": "Barbería QA 1027020248",
+        "category": "Mascotas exóticas",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "esperado": "400; lista las categorías válidas",
+      "status": 400,
+      "respuesta": {
+        "error": "Categoría inválida. Las válidas son: [Educación, Salud y bienestar, Deportes y recreación, Barbería y belleza, Otros]"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:51Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "F1",
+      "desc": "Crear un perfil comercial válido",
+      "request": "POST /api/v1/comercio/perfil",
+      "body": {
+        "businessName": "Barbería QA 1027020248",
+        "category": "Barbería y belleza",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "esperado": "201; id del perfil y datos registrados",
+      "status": 201,
+      "respuesta": {
+        "id": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "userId": "88224493-8d97-4569-b2ef-870b55f71c65",
+        "businessName": "Barbería QA 1027020248",
+        "category": "Barbería y belleza",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:52Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "E3",
+      "desc": "Segundo perfil del mismo proveedor",
+      "request": "POST /api/v1/comercio/perfil",
+      "body": {
+        "businessName": "Barbería QA 1027020248",
+        "category": "Barbería y belleza",
+        "address": "Calle 10 # 43-20, Medellín",
+        "phone": "+573001234567"
+      },
+      "esperado": "409; «Ya tienes un perfil comercial registrado»",
+      "status": 409,
+      "respuesta": {
+        "error": "Ya tienes un perfil comercial registrado"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:52Z"
+    },
+    {
+      "cp": "CP-HU09",
+      "esc": "F1b",
+      "desc": "El perfil queda visible en la búsqueda",
+      "request": "GET /api/v1/catalog/services/search?texto=Barber%C3%ADa%20QA%201027020248",
+      "body": null,
+      "esperado": "200 y el comercio aparece en los resultados",
+      "status": 200,
+      "respuesta": {
+        "mensaje": "No se encontraron servicios",
+        "servicios": []
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Un comercio nuevo no puede publicar servicios ni horarios por API; ver #181.",
+      "hora_utc": "2026-10-27T02:03:52Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "E2",
+      "desc": "Proveedor sin perfil comercial",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "Cancha 1",
+        "type": "FISICO"
+      },
+      "esperado": "409; «Primero debes crear tu perfil comercial»",
+      "status": 409,
+      "respuesta": {
+        "error": "Primero debes crear tu perfil comercial"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:53Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "F1",
+      "desc": "Registrar un recurso físico",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "Cancha 1",
+        "type": "FISICO"
+      },
+      "esperado": "201; ACTIVO y asociado al comercio",
+      "status": 201,
+      "respuesta": {
+        "id": "6646e4a8-b04e-4488-bf97-172c095210d2",
+        "providerId": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "type": "FISICO",
+        "name": "Cancha 1",
+        "status": "ACTIVO"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:54Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "F2",
+      "desc": "Registrar un recurso humano",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "Barbero Carlos",
+        "type": "HUMANO"
+      },
+      "esperado": "201; ACTIVO",
+      "status": 201,
+      "respuesta": {
+        "id": "4977cb69-a406-4151-9dfd-f71e49955124",
+        "providerId": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "type": "HUMANO",
+        "name": "Barbero Carlos",
+        "status": "ACTIVO"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:54Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "E1",
+      "desc": "Recurso duplicado sin distinguir mayúsculas",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "cancha 1",
+        "type": "FISICO"
+      },
+      "esperado": "409; «Ya existe un recurso con ese nombre en tu comercio»",
+      "status": 409,
+      "respuesta": {
+        "error": "Ya existe un recurso con ese nombre en tu comercio"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:55Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "E3a",
+      "desc": "Tipo de recurso inválido",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "Sala Virtual",
+        "type": "VIRTUAL"
+      },
+      "esperado": "400; indica FISICO o HUMANO",
+      "status": 400,
+      "respuesta": {
+        "error": "El tipo de recurso debe ser FISICO o HUMANO"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:55Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "E3b",
+      "desc": "Nombre vacío",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "",
+        "type": "FISICO"
+      },
+      "esperado": "400",
+      "status": 400,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:55.868Z",
+        "status": 400,
+        "error": "Bad Request",
+        "path": "/api/v1/comercio/recursos"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:55Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "E4",
+      "desc": "Mismo nombre en otro comercio",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "Cancha 1",
+        "type": "FISICO"
+      },
+      "esperado": "201",
+      "status": 201,
+      "respuesta": {
+        "id": "a157e7fd-1e05-4729-87db-2293cc06b3e1",
+        "providerId": "4d8f9020-c758-43be-9016-111c159a900f",
+        "type": "FISICO",
+        "name": "Cancha 1",
+        "status": "ACTIVO"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:57Z"
+    },
+    {
+      "cp": "CP-HU12",
+      "esc": "E5",
+      "desc": "Token de cliente",
+      "request": "POST /api/v1/comercio/recursos",
+      "body": {
+        "name": "Cancha 9",
+        "type": "FISICO"
+      },
+      "esperado": "403",
+      "status": 403,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:57Z"
+    },
+    {
+      "cp": "CP-HU10",
+      "esc": "F1",
+      "desc": "Registrar un día no laborable sin reservas",
+      "request": "POST /api/v1/dias-no-laborables",
+      "body": {
+        "idProveedor": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "fecha": "2027-02-10",
+        "motivo": "Prueba QA Sprint 2",
+        "idUsuarioCreador": "88224493-8d97-4569-b2ef-870b55f71c65"
+      },
+      "esperado": "201; fecha registrada",
+      "status": 201,
+      "respuesta": {
+        "createdByUserId": "88224493-8d97-4569-b2ef-870b55f71c65",
+        "fecha": "2027-02-10",
+        "fechaCreacion": "2026-10-27T02:03:57.793991381Z",
+        "id": "3deb91e3-d851-41cf-a197-3259f4fa926a",
+        "motivo": "Prueba QA Sprint 2",
+        "proveedorId": "df9310ab-7de6-4dc7-a481-41f3ffff2c79"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:57Z"
+    },
+    {
+      "cp": "CP-HU10",
+      "esc": "E1",
+      "desc": "Fecha ya registrada",
+      "request": "POST /api/v1/dias-no-laborables",
+      "body": {
+        "idProveedor": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "fecha": "2027-02-10",
+        "motivo": "Prueba QA Sprint 2",
+        "idUsuarioCreador": "88224493-8d97-4569-b2ef-870b55f71c65"
+      },
+      "esperado": "409; «La fecha ya está registrada como no laborable»",
+      "status": 409,
+      "respuesta": {
+        "mensaje": "La fecha ya está registrada como no laborable",
+        "error": "La fecha ya está registrada como no laborable"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:58Z"
+    },
+    {
+      "cp": "CP-HU10",
+      "esc": "E2",
+      "desc": "Fecha con formato inválido",
+      "request": "POST /api/v1/dias-no-laborables",
+      "body": {
+        "idProveedor": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "fecha": "fecha-invalida",
+        "motivo": "Prueba QA Sprint 2",
+        "idUsuarioCreador": "88224493-8d97-4569-b2ef-870b55f71c65"
+      },
+      "esperado": "400",
+      "status": 400,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:58.809Z",
+        "status": 400,
+        "error": "Bad Request",
+        "path": "/api/v1/dias-no-laborables"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:58Z"
+    },
+    {
+      "cp": "CP-HU10",
+      "esc": "E3",
+      "desc": "Fecha pasada",
+      "request": "POST /api/v1/dias-no-laborables",
+      "body": {
+        "idProveedor": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "fecha": "2026-09-20",
+        "motivo": "Prueba QA Sprint 2",
+        "idUsuarioCreador": "88224493-8d97-4569-b2ef-870b55f71c65"
+      },
+      "esperado": "400; «La fecha debe ser igual o posterior a hoy»",
+      "status": 500,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:03:59.278Z",
+        "status": 500,
+        "error": "Internal Server Error",
+        "path": "/api/v1/dias-no-laborables"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:03:59Z"
+    },
+    {
+      "cp": "CP-HU10",
+      "esc": "E4",
+      "desc": "Bloquear una fecha de OTRO comercio con mi token",
+      "request": "POST /api/v1/dias-no-laborables",
+      "body": {
+        "idProveedor": "4d8f9020-c758-43be-9016-111c159a900f",
+        "fecha": "2027-02-11",
+        "motivo": "Prueba QA Sprint 2",
+        "idUsuarioCreador": "88224493-8d97-4569-b2ef-870b55f71c65"
+      },
+      "esperado": "403; un proveedor solo bloquea fechas de su comercio",
+      "status": 201,
+      "respuesta": {
+        "createdByUserId": "88224493-8d97-4569-b2ef-870b55f71c65",
+        "fecha": "2027-02-11",
+        "fechaCreacion": "2026-10-27T02:03:59.535815936Z",
+        "id": "eb3a9ebb-5bda-4b37-9050-0f9e0ff8ab4c",
+        "motivo": "Prueba QA Sprint 2",
+        "proveedorId": "4d8f9020-c758-43be-9016-111c159a900f"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "El proveedor y el usuario creador se leen del cuerpo, no del token.",
+      "hora_utc": "2026-10-27T02:03:59Z"
+    },
+    {
+      "cp": "CP-HU10",
+      "esc": "F2",
+      "desc": "El cliente no ve horarios en la fecha bloqueada",
+      "request": "",
+      "body": null,
+      "esperado": "200 sin horarios ese día",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "El comercio de QA no puede publicar horarios: no hay API para crear agendas de un comercio nuevo.",
+      "hora_utc": "2026-10-27T02:03:59Z"
+    },
+    {
+      "cp": "CP-HU11",
+      "esc": "P1",
+      "desc": "Previsualizar una fecha sin reservas",
+      "request": "POST /api/v1/dias-no-laborables/previsualizar",
+      "body": {
+        "idProveedor": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "fecha": "2027-02-12",
+        "motivo": "Prueba QA Sprint 2",
+        "idUsuarioCreador": "88224493-8d97-4569-b2ef-870b55f71c65"
+      },
+      "esperado": "200; 0 reservas afectadas",
+      "status": 200,
+      "respuesta": {
+        "idProveedor": "df9310ab-7de6-4dc7-a481-41f3ffff2c79",
+        "fecha": "2027-02-12",
+        "reservasAfectadas": 0,
+        "idsReservasAfectadas": []
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:04:00Z"
+    },
+    {
+      "cp": "CP-HU11",
+      "esc": "F1",
+      "desc": "Advertir sobre reservas existentes (409 con la lista)",
+      "request": "",
+      "body": null,
+      "esperado": "Según HU-11",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "Requiere reservas en una agenda del comercio que bloquea; el comercio de QA no puede tener agenda por API. Revisión de código: POST /dias-no-laborables bloquea sin pedir confirmación (no existe el campo confirmar) y la previsualización filtra por fecha de creación (#176).",
+      "hora_utc": "2026-10-27T02:04:00Z"
+    },
+    {
+      "cp": "CP-HU11",
+      "esc": "F2",
+      "desc": "Confirmar el bloqueo con reservas existentes",
+      "request": "",
+      "body": null,
+      "esperado": "Según HU-11",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "Requiere reservas en una agenda del comercio que bloquea; el comercio de QA no puede tener agenda por API. Revisión de código: POST /dias-no-laborables bloquea sin pedir confirmación (no existe el campo confirmar) y la previsualización filtra por fecha de creación (#176).",
+      "hora_utc": "2026-10-27T02:04:00Z"
+    },
+    {
+      "cp": "CP-HU11",
+      "esc": "E1",
+      "desc": "Sin confirmación la fecha sigue laborable",
+      "request": "",
+      "body": null,
+      "esperado": "Según HU-11",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "Requiere reservas en una agenda del comercio que bloquea; el comercio de QA no puede tener agenda por API. Revisión de código: POST /dias-no-laborables bloquea sin pedir confirmación (no existe el campo confirmar) y la previsualización filtra por fecha de creación (#176).",
+      "hora_utc": "2026-10-27T02:04:00Z"
+    },
+    {
+      "cp": "CP-HU11",
+      "esc": "E2",
+      "desc": "Fecha solo con reservas canceladas",
+      "request": "",
+      "body": null,
+      "esperado": "Según HU-11",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "Requiere reservas en una agenda del comercio que bloquea; el comercio de QA no puede tener agenda por API. Revisión de código: POST /dias-no-laborables bloquea sin pedir confirmación (no existe el campo confirmar) y la previsualización filtra por fecha de creación (#176).",
+      "hora_utc": "2026-10-27T02:04:00Z"
+    },
+    {
+      "cp": "CP-HU13",
+      "esc": "F1",
+      "desc": "Registrar horarios en la agenda de un recurso",
+      "request": "",
+      "body": null,
+      "esperado": "201; horario en la agenda del recurso",
+      "status": null,
+      "respuesta": null,
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "No existe endpoint para crear la agenda de un recurso nuevo ni para registrar horarios por recurso: POST /api/v1/disponibilidades solo recibe agendaServicioId.",
+      "hora_utc": "2026-10-27T02:04:00Z"
+    },
+    {
+      "cp": "CP-HU13",
+      "esc": "E2",
+      "desc": "Registrar un horario en la agenda de OTRO comercio",
+      "request": "POST /api/v1/disponibilidades",
+      "body": {
+        "agendaServicioId": "6f085c7d-a713-4657-9fbf-17c914609768",
+        "inicioAt": "2027-03-01T19:08:00+00:00",
+        "finAt": "2027-03-01T20:08:00+00:00"
+      },
+      "esperado": "403",
+      "status": 201,
+      "respuesta": {
+        "id": "097e69c2-6809-4142-a0ec-d23505aaf124",
+        "agendaServicioId": "6f085c7d-a713-4657-9fbf-17c914609768",
+        "estadoDisponibilidadId": 1,
+        "inicioAt": "2027-03-01T19:08:00Z",
+        "finAt": "2027-03-01T20:08:00Z",
+        "creadoPorUsuarioId": null,
+        "fechaCreacion": "2026-10-27T02:04:00.851258703Z"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "La agenda pertenece al comercio de prueba del Sprint 1.",
+      "hora_utc": "2026-10-27T02:04:01Z"
+    },
+    {
+      "cp": "CP-HU13",
+      "esc": "E1",
+      "desc": "Horario cruzado en el mismo recurso",
+      "request": "POST /api/v1/disponibilidades",
+      "body": {
+        "agendaServicioId": "6f085c7d-a713-4657-9fbf-17c914609768",
+        "inicioAt": "2027-03-01T19:38:00+00:00",
+        "finAt": "2027-03-01T20:38:00+00:00"
+      },
+      "esperado": "409; «El horario se cruza con otro horario del recurso»",
+      "status": 409,
+      "respuesta": {
+        "error": "El rango de horario ingresado se traslapa con un horario ya registrado."
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Responde 409, pero con «El rango de horario ingresado se traslapa con un horario ya registrado.»",
+      "hora_utc": "2026-10-27T02:04:02Z"
+    },
+    {
+      "cp": "CP-HU13",
+      "esc": "F2",
+      "desc": "Cada horario muestra el id y el nombre del recurso",
+      "request": "GET /api/v1/catalog/services",
+      "body": null,
+      "esperado": "200; cada horario incluye id y nombre del recurso",
+      "status": 200,
+      "respuesta": [
+        {
+          "serviceId": "13ace5b3-97fc-4d17-8cdb-bc7fa3000293",
+          "service": "Alquiler de cancha",
+          "provider": "Complejo Deportivo Norte",
+          "availableSchedules": [
+            {
+              "availabilityId": "0e3ce241-debd-4ade-9b6c-d95c0e802403",
+              "inicioAt": "2026-11-15T09:00:00Z",
+              "finAt": "2026-11-15T10:00:00Z"
+            }
+          ]
+        },
+        {
+          "serviceId": "f886721f-679a-4494-abc4-68e06b8db60c",
+          "service": "Corte de barba",
+          "provider": "Barbería Central",
+          "availableSchedules": [
+            {
+              "availabilityId": "1a0a08aa-abdf-4d8c-8a79-8d1ce1d62a4d",
+              "inicioAt": "2026-03-02T03:00:00Z",
+              "finAt": "2026-03-02T04:00:00Z"
+            },
+            {
+              "availabilityId": "678409bb-082a-4f4c-8bea-bf9e2706495b",
+              "inicioAt": "2026-08-17T04:25:00Z",
+              "finAt": "2026-08-17T05:25:00Z"
+            },
+            {
+              "availabilityId": "218cb14d-f237-490e-bb14-4b2414ea14db",
+              "inicioAt": "2026-09-20T14:00:00Z",
+              "finAt": "2026-09-20T15:00:00Z"
+            },
+            {
+              "availabilityId": "17345779-0950-402f-bd5b-aec90ea6a8d9",
+              "inicioAt": "2026-10-25T10:00:00Z",
+              "finAt": "2026-10-25T11:00:00Z"
+            },
+            {
+              "availabilityId": "2564ff15-c243-4b6e-9638-48bcbbbd69b4",
+              "inicioAt": "2026-11-16T03:05:00Z",
+              "finAt": "2026-11-16T04:05:00Z"
+            },
+            {
+              "availabilityId": "f6c07b77-3b90-41f1-9d1d-e8b809621906",
+              "inicioAt": "2026-11-20T10:00:00Z",
+              "finAt": "2026-11-20T11:00:00Z"
+            },
+            {
+              "availabilityId": "b3ec82e0-0570-4ab0-a3a1-096da1fab526",
+              "inicioAt": "2026-11-20T13:00:00Z",
+              "finAt": "2026-11-20T17:00:00Z"
+            },
+            {
+              "availabilityId": "ee46eea8-aee9-4a8f-a7c8-0b30e7a04334",
+              "inicioAt": "2026-11-22T16:35:00Z",
+              "finAt": "2026-11-22T17:35:00Z"
+            },
+            {
+              "availabilityId": "74fc3cff-e3fe-400a-bcb2-b9c32d54ea56",
+              "inicioAt": "2026-11-25T09:05:00Z",
+              "finAt": "2026-11-25T10:05:00Z"
+            },
+            {
+              "availabilityId": "a10ae09c-2980-4f87-bff0-0f34174d684d",
+              "inicioAt": "2026-12-15T16:30:00Z",
+              "finAt": "2026-12-15T17:30:00Z"
+            },
+            {
+              "availabilityId": "4a648a93-6fec-4277-be7d-ecb72a6330f8",
+              "inicioAt": "2027-01-20T13:00:00Z",
+              "finAt": "2027-01-20T17:00:00Z"
+            },
+            {
+              "availabilityId": "ab8c1782-1ab0-440a-ba31-d759e25d6089",
+              "inicioAt": "2027-01-21T13:00:00Z",
+              "finAt": "2027-01-21T17:00:00Z"
+            },
+            {
+              "availabilityId": "4daf05f4-4a7a-4041-b2f7-66fb8349cfee",
+              "inicioAt": "2027-01-23T13:00:00Z",
+              "finAt": "2027-01-23T17:00:00Z"
+            },
+            {
+              "availabilityId": "d789809a-fd3e-406b-b44a-f2f963dfa564",
+              "inicioAt": "2027-02-26T19:30:00Z",
+              "finAt": "2027-02-26T20:30:00Z"
+            },
+            {
+              "availabilityId": "097e69c2-6809-4142-a0ec-d23505aaf124",
+              "inicioAt": "2027-03-01T19:08:00Z",
+              "finAt": "2027-03-01T20:08:00Z"
+            },
+            {
+              "availabilityId": "04ceff9a-5647-4c05-93d4-434ad28005d3",
+              "inicioAt": "2027-04-06T03:15:00Z",
+              "finAt": "2027-04-06T04:15:00Z"
+            },
+            {
+              "availabilityId": "48721714-9409-43e1-9957-598e73f7bd6a",
+              "inicioAt": "2027-04-15T13:30:00Z",
+              "finAt": "2027-04-15T14:30:00Z"
+            },
+            {
+              "availabilityId": "55383734-a2fd-4482-9bb8-b3b6f4158ea0",
+              "inicioAt": "2027-04-20T17:15:00Z",
+              "finAt": "2027-04-20T18:15:00Z"
+            },
+            {
+              "availabilityId": "7f06651b-465e-454e-b9f6-96ecf149b2aa",
+              "inicioAt": "2027-04-28T07:50:00Z",
+              "finAt": "2027-04-28T08:50:00Z"
+            },
+            {
+              "availabilityId": "cb143b59-abab-479d-8b50-ccc726e8b009",
+              "inicioAt": "2027-05-09T08:15:00Z",
+              "finAt": "2027-05-09T09:15:00Z"
+            },
+            {
+              "availabilityId": "d3e07ac5-d9b0-4718-a0ed-2a5131f93a71",
+              "inicioAt": "2027-05-12T19:00:00Z",
+              "finAt": "2027-05-12T20:00:00Z"
+            },
+            {
+              "availabilityId": "3b4e3c3e-0d85-43d8-901a-f66096c46161",
+              "inicioAt": "2027-05-28T19:55:00Z",
+              "finAt": "2027-05-28T20:55:00Z"
+            },
+            {
+              "availabilityId": "fe045eb7-fa2a-4f78-b480-9e2eb802a8a5",
+              "inicioAt": "2027-05-29T03:30:00Z",
+              "finAt": "2027-05-29T04:30:00Z"
+            },
+            {
+              "availabilityId": "ec07127f-5d2b-47c5-b635-01f2a068277d",
+              "inicioAt": "2027-06-18T21:30:00Z",
+              "finAt": "2027-06-18T22:30:00Z"
+            },
+            {
+              "availabilityId": "116b73ab-7bcc-4e9e-80a5-cca6629517d3",
+              "inicioAt": "2027-06-22T21:50:00Z",
+              "finAt": "2027-06-22T22:50:00Z"
+            },
+            {
+              "availabilityId": "d9e52049-72a2-4147-877f-1ffb63410649",
+              "inicioAt": "2027-07-01T03:15:00Z",
+              "finAt": "2027-07-01T04:15:00Z"
+            },
+            {
+              "availabilityId": "eac3fada-d207-43f5-ae55-1160d4052552",
+              "inicioAt": "2027-07-11T20:00:00Z",
+              "finAt": "2027-07-11T21:00:00Z"
+            },
+            {
+              "availabilityId": "d24fee4c-37cd-4211-81d3-e01b107891c9",
+              "inicioAt": "2027-07-12T20:55:00Z",
+              "finAt": "2027-07-12T21:55:00Z"
+            },
+            {
+              "availabilityId": "172608db-7a20-4c75-9786-3743e225e63d",
+              "inicioAt": "2027-07-13T19:05:00Z",
+              "finAt": "2027-07-13T20:05:00Z"
+            },
+            {
+              "availabilityId": "7a066b65-b054-4830-afa2-566c16ab4dc7",
+              "inicioAt": "2027-07-15T00:15:00Z",
+              "finAt": "2027-07-15T01:15:00Z"
+            },
+            {
+              "availabilityId": "33cdb6cb-8a9d-483d-a4a5-b6dea4ed120d",
+              "inicioAt": "2027-07-18T17:05:00Z",
+              "finAt": "2027-07-18T18:05:00Z"
+            },
+            {
+              "availabilityId": "dcc49d03-f60d-462e-b8ba-d1382f092640",
+              "inicioAt": "2027-08-31T19:05:00Z",
+              "finAt": "2027-08-31T20:05:00Z"
+            },
+            {
+              "availabilityId": "1a340d3b-b0e3-48f0-a016-2ba6ee2506d0",
+              "inicioAt": "2027-09-17T21:50:00Z",
+              "finAt": "2027-09-17T22:50:00Z"
+            },
+            {
+              "availabilityId": "933ade42-6976-4fab-a07f-523f50eeb949",
+              "inicioAt": "2027-09-23T09:25:00Z",
+              "finAt": "2027-09-23T10:25:00Z"
+            },
+            {
+              "availabilityId": "efafbd07-69ce-4c23-bf58-046564ff0e0f",
+              "inicioAt": "2027-09-25T01:45:00Z",
+              "finAt": "2027-09-25T02:45:00Z"
+            },
+            {
+              "availabilityId": "7f7104a8-8cc8-48cb-8308-966d39e08cab",
+              "inicioAt": "2027-10-08T22:35:00Z",
+              "finAt": "2027-10-08T23:35:00Z"
+            },
+            {
+              "availabilityId": "8acd7aec-8909-461c-ba19-fe3a012fae57",
+              "inicioAt": "2027-11-04T00:10:00Z",
+              "finAt": "2027-11-04T01:10:00Z"
+            },
+            {
+              "availabilityId": "3c583359-b5a8-4c89-ade7-b35f46387b9d",
+              "inicioAt": "2027-11-28T06:05:00Z",
+              "finAt": "2027-11-28T07:05:00Z"
+            },
+            {
+              "availabilityId": "3cd38b7a-e144-4e6c-b01b-eaee917d59e6",
+              "inicioAt": "2027-11-30T14:20:00Z",
+              "finAt": "2027-11-30T15:20:00Z"
+            },
+            {
+              "availabilityId": "14204b39-e911-4256-8aa9-2f5e21197562",
+              "inicioAt": "2027-12-16T20:25:00Z",
+              "finAt": "2027-12-16T21:25:00Z"
+            },
+            {
+              "availabilityId": "a8b0be7d-cbc0-4d1a-abe7-c3b91f5728c5",
+              "inicioAt": "2027-12-24T07:20:00Z",
+              "finAt": "2027-12-24T08:20:00Z"
+            },
+            {
+              "availabilityId": "04e9142c-1e95-459c-836e-91d4e96c75b6",
+              "inicioAt": "2028-01-21T11:45:00Z",
+              "finAt": "2028-01-21T12:45:00Z"
+            },
+            {
+              "availabilityId": "25296411-05ad-43f1-88e5-fb11e7c20087",
+              "inicioAt": "2028-01-22T07:10:00Z",
+              "finAt": "2028-01-22T08:10:00Z"
+            },
+            {
+              "availabilityId": "e7f1f6fc-a735-4583-b749-5151b54edcc3",
+              "inicioAt": "2028-01-23T00:20:00Z",
+              "finAt": "2028-01-23T01:20:00Z"
+            },
+            {
+              "availabilityId": "a1fdc2cd-4916-49a5-b3ec-db25917f9672",
+              "inicioAt": "2028-02-14T20:30:00Z",
+              "finAt": "2028-02-14T21:30:00Z"
+            },
+            {
+              "availabilityId": "43f890a6-9fe7-4917-a9cf-f65de5111574",
+              "inicioAt": "2028-02-19T06:10:00Z",
+              "finAt": "2028-02-19T07:10:00Z"
+            },
+            {
+              "availabilityId": "2e61fac5-1ee3-4582-9f42-38cbb59dd8b8",
+              "inicioAt": "2028-03-23T07:20:00Z",
+              "finAt": "2028-03-23T08:20:00Z"
+            },
+            {
+              "availabilityId": "4c4a8c29-949d-4df4-a07d-1f5817b0a081",
+              "inicioAt": "2028-03-28T00:10:00Z",
+              "finAt": "2028-03-28T01:10:00Z"
+            },
+            {
+              "availabilityId": "5025f8f7-5631-4bc2-9f4e-e9494c4a68dd",
+              "inicioAt": "2028-04-07T15:40:00Z",
+              "finAt": "2028-04-07T16:40:00Z"
+            },
+            {
+              "availabilityId": "9fcf4c54-ba96-4f23-883a-398e98308603",
+              "inicioAt": "2028-05-28T01:00:00Z",
+              "finAt": "2028-05-28T02:00:00Z"
+            },
+            {
+              "availabilityId": "a72ad202-d346-450b-82f7-35236bcf92cb",
+              "inicioAt": "2028-06-06T00:50:00Z",
+              "finAt": "2028-06-06T01:50:00Z"
+            },
+            {
+              "availabilityId": "8669564a-255a-4760-a027-10ec07b16bcf",
+              "inicioAt": "2028-06-14T23:25:00Z",
+              "finAt": "2028-06-15T00:25:00Z"
+            },
+            {
+              "availabilityId": "0df8fe89-2479-4580-92d4-338cb9f1c4d1",
+              "inicioAt": "2028-06-16T02:10:00Z",
+              "finAt": "2028-06-16T03:10:00Z"
+            },
+            {
+              "availabilityId": "49cdbe94-8d21-4020-bbc7-7ca77ae99c01",
+              "inicioAt": "2028-06-22T22:10:00Z",
+              "finAt": "2028-06-22T23:10:00Z"
+            },
+            {
+              "availabilityId": "669db423-6d95-47a6-b2de-b90aa6e893d2",
+              "inicioAt": "2028-06-23T20:10:00Z",
+              "finAt": "2028-06-23T21:10:00Z"
+            },
+            {
+              "availabilityId": "71bd9488-a1e8-4635-b97c-604d2a5c716c",
+              "inicioAt": "2028-08-03T15:05:00Z",
+              "finAt": "2028-08-03T16:05:00Z"
+            },
+            {
+              "availabilityId": "bfb3f95d-b754-4507-8d3b-0621addeb028",
+              "inicioAt": "2028-08-10T14:55:00Z",
+              "finAt": "2028-08-10T15:55:00Z"
+            }
+          ]
+        },
+        {
+          "serviceId": "2c2726da-c3c2-41e2-9967-aee114065077",
+          "service": "Entrenamiento futbol",
+          "provider": "DEPORTES HU",
+          "availableSchedules": [
+            {
+              "availabilityId": "7def517e-9f11-4a6c-98de-9b01fffef3b7",
+              "inicioAt": "2026-10-22T03:26:18Z",
+              "finAt": "2026-10-31T03:26:24Z"
+            }
+          ]
+        },
+        {
+          "serviceId": "ca1b40f3-69da-485b-8fb3-1c9b8e847c8f",
+          "service": "Peinado",
+          "provider": "Barbería Central",
+          "availableSchedules": [
+            {
+              "availabilityId": "8cf808fe-632e-44f2-bdc4-0661eead481e",
+              "inicioAt": "2026-10-21T22:57:57Z",
+              "finAt": "2026-10-22T22:58:03Z"
+            }
+          ]
+        }
+      ],
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "El catálogo no incluye el recurso en los horarios; la búsqueda solo trae el nombre, sin id.",
+      "hora_utc": "2026-10-27T02:04:02Z"
+    },
+    {
+      "cp": "CP-HU13",
+      "esc": "E3a",
+      "desc": "Ana reserva el horario (token de otro cliente)",
+      "request": "POST /api/v1/bookings",
+      "body": {
+        "clienteId": "11111111-1111-1111-1111-111111111111",
+        "disponibilidadId": "097e69c2-6809-4142-a0ec-d23505aaf124"
+      },
+      "esperado": "403: el token no corresponde a Ana",
+      "status": 500,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:04:04.382Z",
+        "status": 500,
+        "error": "Internal Server Error",
+        "path": "/api/v1/bookings"
+      },
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "Bloqueado por el defecto de reservas: POST /api/v1/bookings con un horario DISPONIBLE responde 500, también con clientes válidos (sonda_verificacion.json).",
+      "hora_utc": "2026-10-27T02:04:04Z"
+    },
+    {
+      "cp": "CP-HU13",
+      "esc": "E3",
+      "desc": "Doble reserva sobre el mismo horario",
+      "request": "POST /api/v1/bookings",
+      "body": {
+        "clienteId": "22222222-2222-2222-2222-222222222222",
+        "disponibilidadId": "097e69c2-6809-4142-a0ec-d23505aaf124"
+      },
+      "esperado": "409; «El recurso no está disponible en ese horario»",
+      "status": 500,
+      "respuesta": {
+        "timestamp": "2026-10-27T02:04:05.486Z",
+        "status": 500,
+        "error": "Internal Server Error",
+        "path": "/api/v1/bookings"
+      },
+      "retry_after": null,
+      "resultado": "Bloqueado",
+      "nota": "Bloqueado por el defecto de reservas: POST /api/v1/bookings con un horario DISPONIBLE responde 500, también con clientes válidos (sonda_verificacion.json).",
+      "hora_utc": "2026-10-27T02:04:05Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "F1",
+      "desc": "Buscar por nombre («ENTRE»)",
+      "request": "GET /api/v1/catalog/services/search?texto=ENTRE",
+      "body": null,
+      "esperado": "200; solo servicios cuyo nombre o proveedor contiene el texto",
+      "status": 200,
+      "respuesta": {
+        "mensaje": null,
+        "servicios": [
+          {
+            "availableSchedules": [
+              {
+                "availabilityId": "7def517e-9f11-4a6c-98de-9b01fffef3b7",
+                "finAt": "2026-10-31T03:26:24Z",
+                "inicioAt": "2026-10-22T03:26:18Z",
+                "recurso": "Entrenador porteros"
+              }
+            ],
+            "category": "Empresa",
+            "provider": "DEPORTES HU",
+            "service": "Entrenamiento futbol",
+            "serviceId": "2c2726da-c3c2-41e2-9967-aee114065077"
+          }
+        ]
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:04:06Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "F2",
+      "desc": "Buscar por proveedor («deportes hu»)",
+      "request": "GET /api/v1/catalog/services/search?texto=deportes%20hu",
+      "body": null,
+      "esperado": "200; servicios de ese proveedor",
+      "status": 200,
+      "respuesta": {
+        "mensaje": null,
+        "servicios": [
+          {
+            "availableSchedules": [
+              {
+                "availabilityId": "7def517e-9f11-4a6c-98de-9b01fffef3b7",
+                "finAt": "2026-10-31T03:26:24Z",
+                "inicioAt": "2026-10-22T03:26:18Z",
+                "recurso": "Entrenador porteros"
+              }
+            ],
+            "category": "Empresa",
+            "provider": "DEPORTES HU",
+            "service": "Entrenamiento futbol",
+            "serviceId": "2c2726da-c3c2-41e2-9967-aee114065077"
+          }
+        ]
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:04:06Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "F3",
+      "desc": "Buscar por categoría «Deportes y recreación»",
+      "request": "GET /api/v1/catalog/services/search?categoria=Deportes%20y%20recreaci%C3%B3n",
+      "body": null,
+      "esperado": "200; solo servicios de esa categoría",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "La categoría ingresada 'Deportes y recreación' no existe en el catálogo",
+        "error": "La categoría ingresada 'Deportes y recreación' no existe en el catálogo"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Ver #181.",
+      "hora_utc": "2026-10-27T02:04:07Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "F4",
+      "desc": "Combinar texto y categoría sin tilde",
+      "request": "GET /api/v1/catalog/services/search?texto=a&categoria=Deportes%20y%20recreacion",
+      "body": null,
+      "esperado": "200; cumple ambos filtros",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "La categoría ingresada 'Deportes y recreacion' no existe en el catálogo",
+        "error": "La categoría ingresada 'Deportes y recreacion' no existe en el catálogo"
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Ver #181 y #182.",
+      "hora_utc": "2026-10-27T02:04:07Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "E1",
+      "desc": "Búsqueda sin resultados («Yoga»)",
+      "request": "GET /api/v1/catalog/services/search?texto=Yoga",
+      "body": null,
+      "esperado": "200; lista vacía y «No se encontraron servicios»",
+      "status": 200,
+      "respuesta": {
+        "mensaje": "No se encontraron servicios",
+        "servicios": []
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:04:07Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "E2",
+      "desc": "Búsqueda sin criterio",
+      "request": "GET /api/v1/catalog/services/search",
+      "body": null,
+      "esperado": "400; el mensaje indica el criterio inválido",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "Debe ingresar al menos un criterio de búsqueda: texto o categoría",
+        "error": "Debe ingresar al menos un criterio de búsqueda: texto o categoría"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:04:07Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "E3",
+      "desc": "Categoría fuera del catálogo",
+      "request": "GET /api/v1/catalog/services/search?categoria=Inexistente-QA",
+      "body": null,
+      "esperado": "400",
+      "status": 400,
+      "respuesta": {
+        "mensaje": "La categoría ingresada 'Inexistente-QA' no existe en el catálogo",
+        "error": "La categoría ingresada 'Inexistente-QA' no existe en el catálogo"
+      },
+      "retry_after": null,
+      "resultado": "Pasa",
+      "nota": "",
+      "hora_utc": "2026-10-27T02:04:08Z"
+    },
+    {
+      "cp": "CP-HU14",
+      "esc": "E4",
+      "desc": "No mostrar horarios que ya pasaron",
+      "request": "GET /api/v1/catalog/services/search?texto=a",
+      "body": null,
+      "esperado": "200; todos los inicioAt son futuros",
+      "status": 200,
+      "respuesta": {
+        "mensaje": null,
+        "servicios": [
+          {
+            "availableSchedules": [
+              {
+                "availabilityId": "7def517e-9f11-4a6c-98de-9b01fffef3b7",
+                "finAt": "2026-10-31T03:26:24Z",
+                "inicioAt": "2026-10-22T03:26:18Z",
+                "recurso": "Entrenador porteros"
+              }
+            ],
+            "category": "Empresa",
+            "provider": "DEPORTES HU",
+            "service": "Entrenamiento futbol",
+            "serviceId": "2c2726da-c3c2-41e2-9967-aee114065077"
+          }
+        ]
+      },
+      "retry_after": null,
+      "resultado": "No pasa",
+      "nota": "Ver #183.",
+      "hora_utc": "2026-10-27T02:04:08Z"
+    }
+  ]
+}

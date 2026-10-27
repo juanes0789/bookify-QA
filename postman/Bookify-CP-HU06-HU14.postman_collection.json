@@ -1,0 +1,3407 @@
+{
+  "info": {
+    "_postman_id": "eb4a45ff-11a8-57c2-9bb5-026dc497d253",
+    "name": "Bookify – Casos de prueba HU-06 a HU-14",
+    "description": "Casos de prueba del Sprint 2 (CP-HU06 a CP-HU14), refinados contra el Gherkin final de Azure Boards. Diseñados para ejecutarse a mano, en orden, carpeta por carpeta.\n\n**Antes de cada corrida**, en el entorno «Bookify QA Sprint 2»: cambia `sufijo` (por ejemplo, la fecha y la hora: 1027a) y los cuatro horarios de HU-13. Nada más.\n\n**Cómo leer cada petición:** la pestaña Docs tiene el objetivo, la precondición, el resultado esperado según Azure, cómo verificarlo a mano y el estado conocido con su bug. La pestaña Tests solo compara el código y el mensaje con lo esperado y guarda el id o el token que usa la siguiente petición; puedes borrar esos scripts y copiar los valores al entorno a mano.\n\n**Datos:** las cuentas usan correos @bookify-qa.test y los comercios llevan el sufijo en el nombre. HU-13 crea un horario de 2027 en la agenda de prueba del Sprint 1. La API no permite borrar estos datos.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 · Preparación",
+      "description": "Ejecútala primero: el servicio gratuito de Render se duerme y la primera petición puede tardar cerca de un minuto.",
+      "item": [
+        {
+          "name": "00 · Despertar Render",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Objetivo:** Despertar el servicio antes de la corrida.\n\n**Resultado esperado (Gherkin de Azure):** 200 (puede tardar hasta un minuto la primera vez).\n\n**Cómo verificarlo a mano:** Si responde con error o tarda demasiado, espera unos segundos y vuelve a enviarla."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"00 · responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU06 – Registrar una cuenta",
+      "description": "HU-06. Política de contraseñas: 15 a 64 caracteres, no común, sin el correo ni «bookify». Antes de cada corrida cambia la variable `sufijo` del entorno para que los correos sean nuevos.",
+      "item": [
+        {
+          "name": "CP-HU06-F1 · Registrar una cuenta de cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Registrar un cliente con datos válidos.\n\n**Resultado esperado (Gherkin de Azure):** 201; la respuesta trae id, nombre, correo y rol CLIENTE, sin la contraseña.\n\n**Cómo verificarlo a mano:** Revisa el código 201 y que el JSON no tenga ningún campo de contraseña.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana QA Gómez\",\n  \"correo\": \"qa.s2.cliente.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-F1 · responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"CP-HU06-F1 · rol CLIENTE y sin contraseña\", () => { const b = pm.response.json(); pm.expect(b.rol).to.eql(\"CLIENTE\"); pm.expect(JSON.stringify(b).toLowerCase()).to.not.include(\"contrasena\"); });",
+                  "// Guarda clienteId para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"clienteId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-F2 · Registrar una cuenta de proveedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Registrar el proveedor A, que se usa en HU-09 a HU-13.\n\n**Resultado esperado (Gherkin de Azure):** 201; rol PROVEEDOR.\n\n**Cómo verificarlo a mano:** Revisa el código y el rol.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos QA Barbería\",\n  \"correo\": \"qa.s2.proveedor.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"PROVEEDOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-F2 · responde 201\", () => pm.response.to.have.status(201));",
+                  "// Guarda proveedorAUserId para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"proveedorAUserId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E1 · Correo ya registrado (en mayúsculas)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Comprobar que el correo es único sin distinguir mayúsculas.\n\n**Precondición:** Haber ejecutado F1.\n\n**Resultado esperado (Gherkin de Azure):** 409; «El correo ya está registrado».\n\n**Cómo verificarlo a mano:** Usa el correo del cliente de F1 en mayúsculas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana Repetida\",\n  \"correo\": \"QA.S2.CLIENTE.{{sufijo}}@BOOKIFY-QA.TEST\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E1 · responde 409\", () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU06-E1 · mensaje: El correo ya está registrado\", () => pm.expect(msg).to.include(\"El correo ya está registrado\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E2a · Contraseña de 8 caracteres",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una contraseña corta.\n\n**Resultado esperado (Gherkin de Azure):** 400; el mensaje indica «debe tener entre 15 y 64 caracteres».\n\n**Cómo verificarlo a mano:** Lee el mensaje de la respuesta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Clave\",\n  \"correo\": \"qa.s2.clave1.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"corta123\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E2a · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU06-E2a · mensaje: entre 15 y 64\", () => pm.expect(msg).to.include(\"entre 15 y 64\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E2b · Contraseña de 65 caracteres",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una contraseña larga.\n\n**Resultado esperado (Gherkin de Azure):** 400; «debe tener entre 15 y 64 caracteres».\n\n**Cómo verificarlo a mano:** Lee el mensaje de la respuesta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Clave\",\n  \"correo\": \"qa.s2.clave2.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E2b · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU06-E2b · mensaje: entre 15 y 64\", () => pm.expect(msg).to.include(\"entre 15 y 64\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E2c · Contraseña común",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una contraseña de la lista de contraseñas comunes.\n\n**Resultado esperado (Gherkin de Azure):** 400; «es una contraseña común o comprometida».\n\n**Cómo verificarlo a mano:** Lee el mensaje.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Clave\",\n  \"correo\": \"qa.s2.clave3.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"contraseña123456\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E2c · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU06-E2c · mensaje: común\", () => pm.expect(msg).to.include(\"común\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E2d · Contraseña que contiene el correo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una contraseña que incluye el correo.\n\n**Resultado esperado (Gherkin de Azure):** 400; «no puede contener tu correo».\n\n**Cómo verificarlo a mano:** Lee el mensaje.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Clave\",\n  \"correo\": \"qa.s2.clave4.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"qa.s2.clave4.{{sufijo}}@bookify-qa.test-2026\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E2d · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU06-E2d · mensaje: correo\", () => pm.expect(msg).to.include(\"correo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E3 · Rol inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar un rol distinto de CLIENTE y PROVEEDOR.\n\n**Resultado esperado (Gherkin de Azure):** 400; indica el campo inválido.\n\n**Cómo verificarlo a mano:** Lee el mensaje.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Rol\",\n  \"correo\": \"qa.s2.rol.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"ADMINISTRADOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E3 · responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E4 · Correo con formato inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar un correo mal formado.\n\n**Resultado esperado (Gherkin de Azure):** 400; la respuesta lista el campo inválido (correo).\n\n**Cómo verificarlo a mano:** Busca en la respuesta el nombre del campo.\n\n**Estado conocido (27/10/2026):** No pasa: responde 400 genérico sin indicar el campo (bug #192).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Correo\",\n  \"correo\": \"ana-arroba-mail\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E4 · responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"CP-HU06-E4 · indica el campo correo\", () => pm.expect(pm.response.text().toLowerCase()).to.include(\"correo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU06-E5 · Nombre vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar un nombre vacío.\n\n**Resultado esperado (Gherkin de Azure):** 400; la respuesta lista el campo inválido (nombre).\n\n**Cómo verificarlo a mano:** Busca en la respuesta el nombre del campo.\n\n**Estado conocido (27/10/2026):** No pasa: 400 genérico sin indicar el campo (bug #192).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"correo\": \"qa.s2.nombre.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU06-E5 · responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"CP-HU06-E5 · indica el campo nombre\", () => pm.expect(pm.response.text().toLowerCase()).to.include(\"nombre\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU07 – Iniciar sesión",
+      "description": "HU-07. El token es un JWT Bearer de 3600 s con el id y el rol. **Bloqueado (no está en la colección):** E4 cuenta inactiva, porque no hay API ni datos para inactivar una cuenta.",
+      "item": [
+        {
+          "name": "CP-HU07-F1 · Iniciar sesión como proveedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Obtener el token del proveedor A.\n\n**Resultado esperado (Gherkin de Azure):** 200; tokenType Bearer, expiresIn 3600 y role PROVEEDOR.\n\n**Cómo verificarlo a mano:** Copia accessToken; puedes pegarlo en jwt.io para ver el id y el rol.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.proveedor.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU07-F1 · responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"CP-HU07-F1 · Bearer, 3600 s y rol PROVEEDOR\", () => { const b = pm.response.json(); pm.expect(b.tokenType).to.eql(\"Bearer\"); pm.expect(b.expiresIn).to.eql(3600); pm.expect(b.role).to.eql(\"PROVEEDOR\"); });",
+                  "// Guarda tokenProveedorA para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"tokenProveedorA\", pm.response.json().accessToken); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU07-F2 · Iniciar sesión como cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Obtener el token del cliente.\n\n**Resultado esperado (Gherkin de Azure):** 200; role CLIENTE.\n\n**Cómo verificarlo a mano:** Revisa role en la respuesta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.cliente.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU07-F2 · responde 200\", () => pm.response.to.have.status(200));",
+                  "// Guarda tokenCliente para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"tokenCliente\", pm.response.json().accessToken); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU07-E1 · Contraseña incorrecta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una contraseña incorrecta.\n\n**Resultado esperado (Gherkin de Azure):** 401; «Correo o contraseña incorrectos».\n\n**Cómo verificarlo a mano:** Lee el cuerpo de la respuesta.\n\n**Estado conocido (27/10/2026):** No pasa: 401 sin mensaje, con {authenticated:false,...} (bug #193).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.cliente.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Otra-Clave-Equivocada-99\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU07-E1 · responde 401\", () => pm.response.to.have.status(401));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU07-E1 · mensaje: Correo o contraseña incorrectos\", () => pm.expect(msg).to.include(\"Correo o contraseña incorrectos\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU07-E2 · Correo no registrado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** No revelar si el correo existe.\n\n**Resultado esperado (Gherkin de Azure):** 401; el mismo mensaje de E1.\n\n**Cómo verificarlo a mano:** Compara el cuerpo con el de E1: deben ser iguales.\n\n**Estado conocido (27/10/2026):** No pasa: igual que E1 (bug #193).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.nadie.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU07-E2 · responde 401\", () => pm.response.to.have.status(401));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU07-E2 · mensaje: Correo o contraseña incorrectos\", () => pm.expect(msg).to.include(\"Correo o contraseña incorrectos\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU07-E3 · Campos obligatorios vacíos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar correo y contraseña vacíos.\n\n**Resultado esperado (Gherkin de Azure):** 400.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"\",\n  \"password\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU07-E3 · responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU07-E5 · Endpoint protegido sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Objetivo:** Un endpoint protegido exige token.\n\n**Resultado esperado (Gherkin de Azure):** 401.\n\n**Cómo verificarlo a mano:** Envía la petición sin la cabecera Authorization.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU07-E5 · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU07-E6 · Token CLIENTE en endpoint de proveedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Objetivo:** Un rol sin permiso recibe 403.\n\n**Resultado esperado (Gherkin de Azure):** 403.\n\n**Cómo verificarlo a mano:** Usa el token del cliente en un endpoint de proveedor.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaOtroComercio}}\",\n  \"inicioAt\": \"{{horarioInicio}}\",\n  \"finAt\": \"{{horarioFin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU07-E6 · responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU08 – Bloquear temporalmente el acceso",
+      "description": "HU-08. El bloqueo es por correo, exista o no la cuenta. Ejecuta las peticiones en orden. **Bloqueado (no está en la colección):** F2 acceso al terminar el bloqueo, porque los 15 minutos están fijos en el código y no son configurables (bug #177); para probarlo a mano espera 15 minutos y repite el inicio de sesión correcto.",
+      "item": [
+        {
+          "name": "CP-HU08-P0 · Registrar la cuenta que se va a bloquear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Crear una cuenta dedicada para no bloquear las de otras carpetas.\n\n**Resultado esperado (Gherkin de Azure):** 201.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Bloqueo QA\",\n  \"correo\": \"qa.s2.bloqueo.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-P0 · responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-P1 · Intento fallido 1 de 4",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Acumular el intento fallido 1.\n\n**Resultado esperado (Gherkin de Azure):** 401.\n\n**Cómo verificarlo a mano:** Revisa que responda 401; todavía no hay bloqueo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.bloqueo.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-P1 · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-P2 · Intento fallido 2 de 4",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Acumular el intento fallido 2.\n\n**Resultado esperado (Gherkin de Azure):** 401.\n\n**Cómo verificarlo a mano:** Revisa que responda 401; todavía no hay bloqueo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.bloqueo.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-P2 · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-P3 · Intento fallido 3 de 4",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Acumular el intento fallido 3.\n\n**Resultado esperado (Gherkin de Azure):** 401.\n\n**Cómo verificarlo a mano:** Revisa que responda 401; todavía no hay bloqueo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.bloqueo.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-P3 · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-P4 · Intento fallido 4 de 4",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Acumular el intento fallido 4.\n\n**Resultado esperado (Gherkin de Azure):** 401.\n\n**Cómo verificarlo a mano:** Revisa que responda 401; todavía no hay bloqueo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.bloqueo.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-P4 · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-F1 · Quinto intento fallido: bloqueo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Bloquear al quinto intento fallido consecutivo.\n\n**Resultado esperado (Gherkin de Azure):** 429, encabezado Retry-After en 900 segundos y «Demasiados intentos fallidos. Intenta de nuevo en 15 minutos».\n\n**Cómo verificarlo a mano:** Revisa la pestaña Headers (Retry-After) y el cuerpo.\n\n**Estado conocido (27/10/2026):** No pasa por el mensaje: «La cuenta está bloqueada temporalmente.» (bug #177). Retry-After sí llega.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.bloqueo.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-F1 · responde 429\", () => pm.response.to.have.status(429));",
+                  "pm.test(\"CP-HU08-F1 · Retry-After presente\", () => pm.response.to.have.header(\"Retry-After\"));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU08-F1 · mensaje: Demasiados intentos fallidos\", () => pm.expect(msg).to.include(\"Demasiados intentos fallidos\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-E1 · Credenciales correctas durante el bloqueo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar el acceso durante el bloqueo aunque la contraseña sea correcta.\n\n**Resultado esperado (Gherkin de Azure):** 429; informa los minutos restantes; sin token.\n\n**Cómo verificarlo a mano:** Ejecútala justo después de F1.\n\n**Estado conocido (27/10/2026):** No pasa: no indica los minutos restantes (bug #177).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.bloqueo.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-E1 · responde 429\", () => pm.response.to.have.status(429));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU08-E1 · mensaje: minutos\", () => pm.expect(msg).to.include(\"minutos\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-E2a · Registrar la cuenta del reinicio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Cuenta dedicada al escenario de reinicio del contador.\n\n**Resultado esperado (Gherkin de Azure):** 201.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Reinicio QA\",\n  \"correo\": \"qa.s2.reinicio.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-E2a · responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-E2b · Tres intentos fallidos (envíala 3 veces)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Acumular 3 intentos fallidos.\n\n**Resultado esperado (Gherkin de Azure):** 401 cada vez.\n\n**Cómo verificarlo a mano:** Pulsa Send tres veces.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.reinicio.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-E2b · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-E2c · Inicio de sesión correcto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Un inicio correcto reinicia el contador.\n\n**Resultado esperado (Gherkin de Azure):** 200 y token.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.reinicio.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-E2c · responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-E2d · Nuevo intento fallido: sin bloqueo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Confirmar que el contador volvió a cero.\n\n**Resultado esperado (Gherkin de Azure):** 401 (no 429).\n\n**Cómo verificarlo a mano:** Si respondiera 429, el contador no se reinició.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.reinicio.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-04\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-E2d · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU08-E3 · Correo no registrado (envíala 5 veces)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Aplicar el mismo bloqueo a un correo que no existe.\n\n**Resultado esperado (Gherkin de Azure):** Intentos 1 a 4: 401. Quinto: 429, igual que una cuenta existente.\n\n**Cómo verificarlo a mano:** Pulsa Send cinco veces y compara el quinto código con el de F1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.fantasma.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"Mala-Clave-Intento-00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU08-E3 · 401 antes del bloqueo o 429 al quinto\", () => pm.expect(pm.response.code).to.be.oneOf([401, 429]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU09 – Crear perfil comercial",
+      "description": "HU-09. Categorías válidas: Barbería y belleza, Deportes y recreación, Salud y bienestar, Educación, Otros. Al final se crea también el comercio B, que usan HU-10 (E4) y HU-12 (E4).",
+      "item": [
+        {
+          "name": "CP-HU09-E4a · Crear perfil sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Exigir autenticación.\n\n**Resultado esperado (Gherkin de Azure):** 401.\n\n**Cómo verificarlo a mano:** Envía sin Authorization.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Barbería QA {{sufijo}}\",\n  \"category\": \"Barbería y belleza\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-E4a · responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-E4b · Crear perfil con token de cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Solo un proveedor crea perfiles.\n\n**Resultado esperado (Gherkin de Azure):** 403.\n\n**Cómo verificarlo a mano:** Usa tokenCliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Barbería QA {{sufijo}}\",\n  \"category\": \"Barbería y belleza\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-E4b · responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-E1 · Perfil sin nombre comercial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar datos obligatorios incompletos.\n\n**Resultado esperado (Gherkin de Azure):** 400; lista el campo faltante.\n\n**Cómo verificarlo a mano:** Busca «nombre comercial» en la respuesta.\n\n**Estado conocido (27/10/2026):** No pasa: 400 genérico sin el campo (bug #192).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"\",\n  \"category\": \"Barbería y belleza\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-E1 · responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"CP-HU09-E1 · indica el campo\", () => pm.expect(pm.response.text().toLowerCase()).to.include(\"nombre comercial\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-E2 · Perfil sin categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar datos obligatorios incompletos.\n\n**Resultado esperado (Gherkin de Azure):** 400; lista el campo faltante.\n\n**Cómo verificarlo a mano:** Busca «categoría» en la respuesta.\n\n**Estado conocido (27/10/2026):** No pasa: 400 genérico sin el campo (bug #192).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Barbería QA {{sufijo}}\",\n  \"category\": \"\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-E2 · responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"CP-HU09-E2 · indica el campo\", () => pm.expect(pm.response.text().toLowerCase()).to.include(\"categor\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-E5 · Categoría fuera del catálogo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una categoría que no está en el catálogo.\n\n**Resultado esperado (Gherkin de Azure):** 400; lista las categorías válidas.\n\n**Cómo verificarlo a mano:** Lee el mensaje.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Barbería QA {{sufijo}}\",\n  \"category\": \"Mascotas exóticas\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-E5 · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU09-E5 · mensaje: Barbería y belleza\", () => pm.expect(msg).to.include(\"Barbería y belleza\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-F1 · Crear un perfil comercial válido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Crear el perfil del comercio A.\n\n**Resultado esperado (Gherkin de Azure):** 201; id del perfil y los datos enviados.\n\n**Cómo verificarlo a mano:** Copia el id: es el idProveedor de HU-10 y HU-11.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Barbería QA {{sufijo}}\",\n  \"category\": \"Barbería y belleza\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-F1 · responde 201\", () => pm.response.to.have.status(201));",
+                  "// Guarda perfilAId para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"perfilAId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-E3 · Segundo perfil del mismo proveedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Un proveedor tiene un solo perfil.\n\n**Resultado esperado (Gherkin de Azure):** 409; «Ya tienes un perfil comercial registrado».\n\n**Cómo verificarlo a mano:** Reenvía el mismo cuerpo de F1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Barbería QA {{sufijo}}\",\n  \"category\": \"Barbería y belleza\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-E3 · responde 409\", () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU09-E3 · mensaje: Ya tienes un perfil comercial registrado\", () => pm.expect(msg).to.include(\"Ya tienes un perfil comercial registrado\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-F1b · El comercio aparece en la búsqueda",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?texto=Barbería QA {{sufijo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "texto",
+                  "value": "Barbería QA {{sufijo}}"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Criterio de HU-09: la consulta de servicios muestra el comercio.\n\n**Resultado esperado (Gherkin de Azure):** 200 y el comercio entre los resultados.\n\n**Cómo verificarlo a mano:** Busca el nombre comercial de F1.\n\n**Estado conocido (27/10/2026):** No pasa: un comercio nuevo no puede publicar servicios ni horarios (bugs #190 y #181)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-F1b · responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"CP-HU09-F1b · el comercio aparece\", () => pm.expect(pm.response.json().servicios.map(s => s.provider)).to.include(\"Barbería QA \" + pm.environment.get(\"sufijo\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-P1 · Registrar el proveedor B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Preparar el comercio B.\n\n**Resultado esperado (Gherkin de Azure):** 201.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Marta QA Estadio\",\n  \"correo\": \"qa.s2.proveedorb.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"PROVEEDOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-P1 · responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-P2 · Iniciar sesión como proveedor B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Token del comercio B.\n\n**Resultado esperado (Gherkin de Azure):** 200.\n\n**Cómo verificarlo a mano:** Copia accessToken.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.proveedorb.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-P2 · responde 200\", () => pm.response.to.have.status(200));",
+                  "// Guarda tokenProveedorB para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"tokenProveedorB\", pm.response.json().accessToken); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU09-P3 · Crear el perfil del comercio B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "perfil"
+              ]
+            },
+            "description": "**Objetivo:** Comercio B con otra categoría.\n\n**Resultado esperado (Gherkin de Azure):** 201.\n\n**Cómo verificarlo a mano:** Copia el id: lo usa HU-10 E4.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Estadio QA {{sufijo}}\",\n  \"category\": \"Deportes y recreación\",\n  \"address\": \"Calle 10 # 43-20, Medellín\",\n  \"phone\": \"+573001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU09-P3 · responde 201\", () => pm.response.to.have.status(201));",
+                  "// Guarda perfilBId para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"perfilBId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU10 – Registrar feriados y días de descanso",
+      "description": "HU-10. Fechas en America/Bogota. El endpoint recibe idProveedor e idUsuarioCreador en el cuerpo. **Bloqueado (no está en la colección):** F2 «el cliente no ve horarios en la fecha bloqueada», porque el comercio de QA no puede publicar horarios (bug #190).",
+      "item": [
+        {
+          "name": "CP-HU10-F1 · Registrar un día no laborable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dias-no-laborables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dias-no-laborables"
+              ]
+            },
+            "description": "**Objetivo:** Bloquear una fecha sin reservas en el comercio A.\n\n**Resultado esperado (Gherkin de Azure):** 201 y la fecha registrada.\n\n**Cómo verificarlo a mano:** Revisa fecha en la respuesta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idProveedor\": \"{{perfilAId}}\",\n  \"fecha\": \"{{fechaNoLaborable}}\",\n  \"motivo\": \"Prueba QA Sprint 2\",\n  \"idUsuarioCreador\": \"{{proveedorAUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU10-F1 · responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU10-E1 · Fecha ya registrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dias-no-laborables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dias-no-laborables"
+              ]
+            },
+            "description": "**Objetivo:** No registrar dos veces la misma fecha.\n\n**Resultado esperado (Gherkin de Azure):** 409; «La fecha ya está registrada como no laborable».\n\n**Cómo verificarlo a mano:** Reenvía el cuerpo de F1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idProveedor\": \"{{perfilAId}}\",\n  \"fecha\": \"{{fechaNoLaborable}}\",\n  \"motivo\": \"Prueba QA Sprint 2\",\n  \"idUsuarioCreador\": \"{{proveedorAUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU10-E1 · responde 409\", () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU10-E1 · mensaje: La fecha ya está registrada como no laborable\", () => pm.expect(msg).to.include(\"La fecha ya está registrada como no laborable\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU10-E2 · Fecha con formato inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dias-no-laborables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dias-no-laborables"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar un formato de fecha inválido.\n\n**Resultado esperado (Gherkin de Azure):** 400.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idProveedor\": \"{{perfilAId}}\",\n  \"fecha\": \"fecha-invalida\",\n  \"motivo\": \"Prueba QA Sprint 2\",\n  \"idUsuarioCreador\": \"{{proveedorAUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU10-E2 · responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU10-E3 · Fecha pasada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dias-no-laborables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dias-no-laborables"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una fecha anterior a hoy.\n\n**Resultado esperado (Gherkin de Azure):** 400; «La fecha debe ser igual o posterior a hoy».\n\n**Cómo verificarlo a mano:** Lee el mensaje.\n\n**Estado conocido (27/10/2026):** No pasa: responde 500 (bug #194).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idProveedor\": \"{{perfilAId}}\",\n  \"fecha\": \"{{fechaPasada}}\",\n  \"motivo\": \"Prueba QA Sprint 2\",\n  \"idUsuarioCreador\": \"{{proveedorAUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU10-E3 · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU10-E3 · mensaje: posterior a hoy\", () => pm.expect(msg).to.include(\"posterior a hoy\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU10-E4 · Bloquear una fecha de OTRO comercio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dias-no-laborables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dias-no-laborables"
+              ]
+            },
+            "description": "**Objetivo:** Un proveedor solo bloquea fechas de su comercio.\n\n**Resultado esperado (Gherkin de Azure):** 403.\n\n**Cómo verificarlo a mano:** Con el token del proveedor A envía el idProveedor del comercio B.\n\n**Estado conocido (27/10/2026):** No pasa: responde 201 y bloquea la fecha del comercio B (bug #188, seguridad).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idProveedor\": \"{{perfilBId}}\",\n  \"fecha\": \"{{fechaOtroComercio}}\",\n  \"motivo\": \"Prueba QA Sprint 2\",\n  \"idUsuarioCreador\": \"{{proveedorAUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU10-E4 · responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU11 – Gestionar reservas existentes al bloquear una fecha",
+      "description": "HU-11. **Bloqueados (no están en la colección):** F1 advertir sobre reservas existentes (409 con la lista), F2 confirmar el bloqueo, E1 sin confirmación la fecha sigue laborable y E2 fecha solo con reservas canceladas. Requieren reservas en una agenda del comercio que bloquea, y el comercio de QA no puede tener agenda por API (bug #190). Además, la confirmación no existe: el POST bloquea aunque haya reservas (bug #191), y la previsualización filtra por fecha de creación (bug #176).",
+      "item": [
+        {
+          "name": "CP-HU11-P1 · Previsualizar una fecha sin reservas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dias-no-laborables/previsualizar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dias-no-laborables",
+                "previsualizar"
+              ]
+            },
+            "description": "**Objetivo:** Ver cuántas reservas afectaría bloquear una fecha.\n\n**Resultado esperado (Gherkin de Azure):** 200 y reservasAfectadas = 0.\n\n**Cómo verificarlo a mano:** Revisa reservasAfectadas e idsReservasAfectadas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idProveedor\": \"{{perfilAId}}\",\n  \"fecha\": \"{{fechaPrevisualizar}}\",\n  \"motivo\": \"Prueba QA Sprint 2\",\n  \"idUsuarioCreador\": \"{{proveedorAUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU11-P1 · responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"CP-HU11-P1 · 0 reservas afectadas\", () => pm.expect(pm.response.json().reservasAfectadas).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU12 – Registrar un recurso",
+      "description": "HU-12. Nombre de 1 a 60 caracteres, único por comercio sin distinguir mayúsculas. Tipos: FISICO o HUMANO.",
+      "item": [
+        {
+          "name": "CP-HU12-P1 · Registrar un proveedor sin perfil (C)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Preparar un proveedor que no tiene perfil comercial.\n\n**Resultado esperado (Gherkin de Azure):** 201.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pedro QA Sin Perfil\",\n  \"correo\": \"qa.s2.proveedorc.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"PROVEEDOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-P1 · responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-P2 · Iniciar sesión como proveedor C",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "**Objetivo:** Token del proveedor sin perfil.\n\n**Resultado esperado (Gherkin de Azure):** 200.\n\n**Cómo verificarlo a mano:** Copia accessToken.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"qa.s2.proveedorc.{{sufijo}}@bookify-qa.test\",\n  \"password\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-P2 · responde 200\", () => pm.response.to.have.status(200));",
+                  "// Guarda tokenProveedorC para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"tokenProveedorC\", pm.response.json().accessToken); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-E2 · Proveedor sin perfil comercial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorC}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** Exigir perfil comercial.\n\n**Resultado esperado (Gherkin de Azure):** 409; «Primero debes crear tu perfil comercial».\n\n**Cómo verificarlo a mano:** Usa tokenProveedorC.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cancha 1\",\n  \"type\": \"FISICO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-E2 · responde 409\", () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU12-E2 · mensaje: Primero debes crear tu perfil comercial\", () => pm.expect(msg).to.include(\"Primero debes crear tu perfil comercial\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-F1 · Registrar un recurso físico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** Registrar «Cancha 1» en el comercio A.\n\n**Resultado esperado (Gherkin de Azure):** 201; status ACTIVO y providerId = perfilAId.\n\n**Cómo verificarlo a mano:** Compara providerId con perfilAId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cancha 1\",\n  \"type\": \"FISICO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-F1 · responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"CP-HU12-F1 · ACTIVO en mi comercio\", () => { const b = pm.response.json(); pm.expect(b.status).to.eql(\"ACTIVO\"); pm.expect(b.providerId).to.eql(pm.environment.get(\"perfilAId\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-F2 · Registrar un recurso humano",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** Registrar «Barbero Carlos».\n\n**Resultado esperado (Gherkin de Azure):** 201; ACTIVO.\n\n**Cómo verificarlo a mano:** Revisa type y status.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Barbero Carlos\",\n  \"type\": \"HUMANO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-F2 · responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-E1 · Recurso duplicado sin distinguir mayúsculas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** El nombre es único por comercio.\n\n**Resultado esperado (Gherkin de Azure):** 409; «Ya existe un recurso con ese nombre en tu comercio».\n\n**Cómo verificarlo a mano:** Envía «cancha 1» en minúsculas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"cancha 1\",\n  \"type\": \"FISICO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-E1 · responde 409\", () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU12-E1 · mensaje: Ya existe un recurso con ese nombre en tu comercio\", () => pm.expect(msg).to.include(\"Ya existe un recurso con ese nombre en tu comercio\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-E3a · Tipo de recurso inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** Solo FISICO o HUMANO.\n\n**Resultado esperado (Gherkin de Azure):** 400; indica que el tipo debe ser FISICO o HUMANO.\n\n**Cómo verificarlo a mano:** Lee el mensaje.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sala Virtual\",\n  \"type\": \"VIRTUAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-E3a · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU12-E3a · mensaje: FISICO o HUMANO\", () => pm.expect(msg).to.include(\"FISICO o HUMANO\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-E3b · Nombre vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** Rechazar un nombre vacío.\n\n**Resultado esperado (Gherkin de Azure):** 400.\n\n**Cómo verificarlo a mano:** Revisa el código.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"type\": \"FISICO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-E3b · responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-E4 · Mismo nombre en otro comercio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** La unicidad es por comercio.\n\n**Resultado esperado (Gherkin de Azure):** 201.\n\n**Cómo verificarlo a mano:** Usa tokenProveedorB con el nombre «Cancha 1».",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cancha 1\",\n  \"type\": \"FISICO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-E4 · responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU12-E5 · Token de cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comercio/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comercio",
+                "recursos"
+              ]
+            },
+            "description": "**Objetivo:** Un cliente no registra recursos.\n\n**Resultado esperado (Gherkin de Azure):** 403.\n\n**Cómo verificarlo a mano:** Usa tokenCliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cancha 9\",\n  \"type\": \"FISICO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU12-E5 · responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU13 – Gestionar la agenda de cada recurso",
+      "description": "HU-13. **Antes de cada corrida cambia `horarioInicio`, `horarioFin`, `horarioCruceInicio` y `horarioCruceFin`** (si repites el horario, E2 responderá 409 por cruce). **No ejecutable (no está en la colección):** F1 «registrar horarios en la agenda de un recurso», porque no existe un endpoint que reciba el recurso: POST /api/v1/disponibilidades solo acepta agendaServicioId (bug #190).",
+      "item": [
+        {
+          "name": "CP-HU13-E2 · Registrar un horario en la agenda de OTRO comercio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Objetivo:** Un proveedor solo publica horarios en su comercio.\n\n**Resultado esperado (Gherkin de Azure):** 403.\n\n**Cómo verificarlo a mano:** agendaOtroComercio es la agenda de prueba del Sprint 1, que pertenece a otro comercio.\n\n**Estado conocido (27/10/2026):** No pasa: responde 201 y crea el horario (bug #189, seguridad). La respuesta trae el id del horario, que usan E1 y E3.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaOtroComercio}}\",\n  \"inicioAt\": \"{{horarioInicio}}\",\n  \"finAt\": \"{{horarioFin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU13-E2 · responde 403\", () => pm.response.to.have.status(403));",
+                  "// Guarda disponibilidadId para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"disponibilidadId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU13-E1 · Horario cruzado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenProveedorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/disponibilidades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "disponibilidades"
+              ]
+            },
+            "description": "**Objetivo:** No permitir horarios cruzados en la misma agenda.\n\n**Precondición:** Haber ejecutado E2.\n\n**Resultado esperado (Gherkin de Azure):** 409; «El horario se cruza con otro horario del recurso».\n\n**Cómo verificarlo a mano:** El horario empieza 30 minutos después del de E2.\n\n**Estado conocido (27/10/2026):** No pasa por el mensaje: «El rango de horario ingresado se traslapa con un horario ya registrado.» (bug #196).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agendaServicioId\": \"{{agendaOtroComercio}}\",\n  \"inicioAt\": \"{{horarioCruceInicio}}\",\n  \"finAt\": \"{{horarioCruceFin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU13-E1 · responde 409\", () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU13-E1 · mensaje: se cruza\", () => pm.expect(msg).to.include(\"se cruza\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU13-F2 · Cada horario muestra el id y el nombre del recurso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services"
+              ]
+            },
+            "description": "**Objetivo:** El cliente elige el recurso al reservar.\n\n**Resultado esperado (Gherkin de Azure):** 200; cada horario incluye el id y el nombre del recurso.\n\n**Cómo verificarlo a mano:** Abre availableSchedules de cualquier servicio.\n\n**Estado conocido (27/10/2026):** No pasa: el catálogo no trae el recurso (bug #195)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU13-F2 · responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"CP-HU13-F2 · cada horario trae el recurso\", () => pm.response.json().forEach(s => s.availableSchedules.forEach(h => pm.expect(h).to.have.property(\"recursoId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU13-P1 · Registrar un segundo cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "**Objetivo:** Preparar al cliente B para E3a.\n\n**Resultado esperado (Gherkin de Azure):** 201.\n\n**Cómo verificarlo a mano:** Copia el id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Luis QA Pérez\",\n  \"correo\": \"qa.s2.clienteb.{{sufijo}}@bookify-qa.test\",\n  \"contrasena\": \"{{clave}}\",\n  \"rol\": \"CLIENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU13-P1 · responde 201\", () => pm.response.to.have.status(201));",
+                  "// Guarda clienteBId para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"clienteBId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU13-E3a · Reservar a nombre de OTRO cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Objetivo:** Un cliente solo reserva a su nombre.\n\n**Precondición:** Haber ejecutado E2 (disponibilidadId).\n\n**Resultado esperado (Gherkin de Azure):** 403.\n\n**Cómo verificarlo a mano:** Con tokenCliente envía el clienteId del cliente B.\n\n**Estado conocido (27/10/2026):** Bloqueado: crear reservas responde 500 en Render (bug #187).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteBId}}\",\n  \"disponibilidadId\": \"{{disponibilidadId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU13-E3a · responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU13-E3b · Reservar el horario a mi nombre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Objetivo:** Reserva válida del cliente A.\n\n**Resultado esperado (Gherkin de Azure):** 201 y estado CONFIRMADA.\n\n**Cómo verificarlo a mano:** Copia el id de la reserva.\n\n**Estado conocido (27/10/2026):** No pasa: responde 500 (bug #187).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"disponibilidadId\": \"{{disponibilidadId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU13-E3b · responde 201\", () => pm.response.to.have.status(201));",
+                  "// Guarda reservaId para las peticiones siguientes (también puedes copiarlo a mano al entorno).",
+                  "if (pm.response.code < 300) { pm.environment.set(\"reservaId\", pm.response.json().id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU13-E3 · Doble reserva sobre el mismo horario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "**Objetivo:** Impedir la doble reserva sobre el mismo recurso.\n\n**Precondición:** E3b respondió 201.\n\n**Resultado esperado (Gherkin de Azure):** 409; «El recurso no está disponible en ese horario».\n\n**Cómo verificarlo a mano:** Reenvía E3b con el mismo horario.\n\n**Estado conocido (27/10/2026):** Bloqueado por el bug #187; ver también #186.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"disponibilidadId\": \"{{disponibilidadId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU13-E3 · responde 409\", () => pm.response.to.have.status(409));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU13-E3 · mensaje: El recurso no está disponible en ese horario\", () => pm.expect(msg).to.include(\"El recurso no está disponible en ese horario\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CP-HU14 – Buscar servicios por nombre o categoría",
+      "description": "HU-14. Endpoint público. La coincidencia es parcial y no distingue mayúsculas ni tildes. La categoría es la del perfil comercial (HU-09). Los valores de `textoBusqueda` y `proveedorBusqueda` dependen de los datos de Render: revisa el resultado de E4 (búsqueda amplia) y ajústalos.",
+      "item": [
+        {
+          "name": "CP-HU14-F1 · Buscar por nombre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?texto={{textoBusqueda}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "texto",
+                  "value": "{{textoBusqueda}}"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Encontrar servicios cuyo nombre contiene el texto.\n\n**Resultado esperado (Gherkin de Azure):** 200; solo servicios que coinciden, con proveedor, categoría y horarios con su recurso.\n\n**Cómo verificarlo a mano:** Revisa que cada service o provider contenga el texto."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-F1 · responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"CP-HU14-F1 · hay resultados\", () => pm.expect(pm.response.json().servicios.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU14-F2 · Buscar por proveedor, en minúsculas y sin tildes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?texto={{proveedorBusqueda}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "texto",
+                  "value": "{{proveedorBusqueda}}"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Encontrar los servicios de un proveedor.\n\n**Resultado esperado (Gherkin de Azure):** 200; servicios de ese proveedor.\n\n**Cómo verificarlo a mano:** Revisa provider en cada resultado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-F2 · responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU14-F3 · Buscar por categoría «Deportes y recreación»",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?categoria=Deportes y recreación",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "Deportes y recreación"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Filtrar por una categoría del catálogo de HU-09.\n\n**Resultado esperado (Gherkin de Azure):** 200; solo servicios de esa categoría.\n\n**Cómo verificarlo a mano:** Revisa category en cada resultado.\n\n**Estado conocido (27/10/2026):** No pasa: 400 «no existe en el catálogo» (bug #181)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-F3 · responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU14-F4 · Texto y categoría sin tilde",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?texto=futbol&categoria=Deportes y recreacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "texto",
+                  "value": "futbol"
+                },
+                {
+                  "key": "categoria",
+                  "value": "Deportes y recreacion"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Combinar filtros sin tildes.\n\n**Resultado esperado (Gherkin de Azure):** 200; cumple ambos filtros.\n\n**Cómo verificarlo a mano:** Revisa service y category.\n\n**Estado conocido (27/10/2026):** No pasa: 400 (bugs #181 y #182)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-F4 · responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU14-E1 · Búsqueda sin resultados («Yoga»)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?texto=Yoga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "texto",
+                  "value": "Yoga"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Informar cuando no hay coincidencias.\n\n**Resultado esperado (Gherkin de Azure):** 200; lista vacía y «No se encontraron servicios».\n\n**Cómo verificarlo a mano:** Revisa servicios y mensaje."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-E1 · responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"CP-HU14-E1 · lista vacía y mensaje\", () => { const b = pm.response.json(); pm.expect(b.servicios).to.eql([]); pm.expect(b.mensaje).to.eql(\"No se encontraron servicios\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU14-E2 · Búsqueda sin criterio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ]
+            },
+            "description": "**Objetivo:** Exigir al menos un criterio.\n\n**Resultado esperado (Gherkin de Azure):** 400; el mensaje indica el criterio inválido.\n\n**Cómo verificarlo a mano:** Lee el mensaje."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-E2 · responde 400\", () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "const msg = [b.mensaje, b.error, b.motivo].filter(Boolean).join(' ');",
+                  "pm.test(\"CP-HU14-E2 · mensaje: criterio\", () => pm.expect(msg).to.include(\"criterio\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU14-E3 · Categoría fuera del catálogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?categoria=Inexistente-QA",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "Inexistente-QA"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Rechazar una categoría inexistente.\n\n**Resultado esperado (Gherkin de Azure):** 400.\n\n**Cómo verificarlo a mano:** Lee el mensaje."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-E3 · responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-HU14-E4 · No mostrar horarios que ya pasaron",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/services/search?texto=a",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "services",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "texto",
+                  "value": "a"
+                }
+              ]
+            },
+            "description": "**Objetivo:** Solo se muestran horarios reservables.\n\n**Resultado esperado (Gherkin de Azure):** 200; todos los inicioAt son posteriores a ahora.\n\n**Cómo verificarlo a mano:** Compara cada inicioAt con la fecha y hora actuales.\n\n**Estado conocido (27/10/2026):** No pasa: aparecen horarios pasados (bug #183)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CP-HU14-E4 · responde 200\", () => pm.response.to.have.status(200));",
+                  "const ahora = new Date().toISOString();",
+                  "pm.test(\"CP-HU14-E4 · todos los horarios son futuros\", () => pm.response.json().servicios.forEach(s => s.availableSchedules.forEach(h => pm.expect(h.inicioAt > ahora, h.inicioAt).to.be.true)));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
