@@ -21,6 +21,7 @@ public class GlobalExceptionHandler {
 
     private static final String ERROR_KEY = "error";
     private static final String MESSAGE_KEY = "mensaje";
+    private static final String EMAIL_TAKEN_MESSAGE = "El correo ya está registrado";
 
     @ExceptionHandler(AvailabilityOverlapException.class)
     public ResponseEntity<Map<String, String>> handleOverlapException(AvailabilityOverlapException ex) {
@@ -61,10 +62,10 @@ public class GlobalExceptionHandler {
         }
         if (causeMessage != null && causeMessage.contains("correo")) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of(ERROR_KEY, "El correo ya está registrado", MESSAGE_KEY, "El correo ya está registrado"));
+                    .body(Map.of(ERROR_KEY, EMAIL_TAKEN_MESSAGE, MESSAGE_KEY, EMAIL_TAKEN_MESSAGE));
         }
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of(ERROR_KEY, "El correo ya está registrado", MESSAGE_KEY, "El correo ya está registrado"));
+                .body(Map.of(ERROR_KEY, EMAIL_TAKEN_MESSAGE, MESSAGE_KEY, EMAIL_TAKEN_MESSAGE));
     }
 
     @ExceptionHandler(InvalidPasswordException.class)

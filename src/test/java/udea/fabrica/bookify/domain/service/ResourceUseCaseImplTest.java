@@ -51,9 +51,10 @@ class ResourceUseCaseImplTest {
     void shouldThrowForbidden_whenRoleIsCliente() {
         // Arrange
         UUID userId = UUID.randomUUID();
+        CreateResourceRequest request = request("Cancha 1", "FISICO");
 
         // Act + Assert
-        assertThatThrownBy(() -> useCase.createResource(userId, "CLIENTE", request("Cancha 1", "FISICO")))
+        assertThatThrownBy(() -> useCase.createResource(userId, "CLIENTE", request))
                 .isInstanceOf(DomainForbiddenException.class);
         verifyNoInteractions(merchantProfileRepositoryPort, resourceRepositoryPort);
     }
@@ -63,9 +64,10 @@ class ResourceUseCaseImplTest {
         // Arrange
         UUID userId = UUID.randomUUID();
         when(merchantProfileRepositoryPort.findByUserId(userId)).thenReturn(Optional.empty());
+        CreateResourceRequest request = request("Cancha 1", "FISICO");
 
         // Act + Assert
-        assertThatThrownBy(() -> useCase.createResource(userId, "PROVEEDOR", request("Cancha 1", "FISICO")))
+        assertThatThrownBy(() -> useCase.createResource(userId, "PROVEEDOR", request))
                 .isInstanceOf(DomainConflictException.class)
                 .hasMessageContaining("perfil comercial");
         verify(resourceRepositoryPort, never()).save(any(Resource.class));
@@ -77,9 +79,10 @@ class ResourceUseCaseImplTest {
         UUID userId = UUID.randomUUID();
         when(merchantProfileRepositoryPort.findByUserId(userId))
                 .thenReturn(Optional.of(profile(UUID.randomUUID(), userId)));
+        CreateResourceRequest request = request("Cancha 1", "VIRTUAL");
 
         // Act + Assert
-        assertThatThrownBy(() -> useCase.createResource(userId, "PROVEEDOR", request("Cancha 1", "VIRTUAL")))
+        assertThatThrownBy(() -> useCase.createResource(userId, "PROVEEDOR", request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("FISICO o HUMANO");
         verify(resourceRepositoryPort, never()).save(any(Resource.class));
@@ -94,9 +97,10 @@ class ResourceUseCaseImplTest {
                 .thenReturn(Optional.of(profile(profileId, userId)));
         when(resourceRepositoryPort.existsByMerchantProfileIdAndNameIgnoreCase(profileId, "cancha 1"))
                 .thenReturn(true);
+        CreateResourceRequest request = request("cancha 1", "FISICO");
 
         // Act + Assert
-        assertThatThrownBy(() -> useCase.createResource(userId, "PROVEEDOR", request("cancha 1", "FISICO")))
+        assertThatThrownBy(() -> useCase.createResource(userId, "PROVEEDOR", request))
                 .isInstanceOf(DomainConflictException.class)
                 .hasMessageContaining("Ya existe un recurso");
         verify(resourceRepositoryPort, never()).save(any(Resource.class));

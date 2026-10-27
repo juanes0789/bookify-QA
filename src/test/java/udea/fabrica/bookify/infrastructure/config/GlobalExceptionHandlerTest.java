@@ -144,11 +144,58 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldReturnRetryAfterHeader_whenLoginIsBlocked() {
+        // Arrange
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
+        // Act
         var response = handler.handleLoginBlocked(new LoginBlockedException(OffsetDateTime.now().plusSeconds(60)));
 
+        // Assert
         assertThat(response.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS);
         assertThat(Long.parseLong(response.getHeaders().getFirst("Retry-After"))).isBetween(59L, 60L);
+    }
+
+    @Test
+    void shouldReturnZeroRetryAfter_whenBlockIsMissingOrExpired() {
+        // Arrange
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+        // Act
+        var withoutDate = handler.handleLoginBlocked(new LoginBlockedException(null));
+        var expired = handler.handleLoginBlocked(new LoginBlockedException(OffsetDateTime.now().minusSeconds(5)));
+
+        // Assert
+        assertThat(withoutDate.getHeaders().getFirst("Retry-After")).isEqualTo("0");
+        assertThat(expired.getHeaders().getFirst("Retry-After")).isEqualTo("0");
+    }
+
+    @Test
+    void shouldReturnBadRequest_whenNonWorkingDayReferencesUnknownProviderOrUser() {
+        // Arrange
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        var violation = new DataIntegrityViolationException("could not execute statement",
+                new RuntimeException("insert violates foreign key constraint \"tbl_dia_no_laborable_proveedor_id_fkey\""));
+
+        // Act
+        var response = handler.handleDataIntegrityViolation(violation);
+
+        // Assert
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).containsEntry("mensaje", "El proveedor o usuario especificado no existe");
+    }
+
+    @Test
+    void shouldReturnConflict_whenEmailUniqueConstraintFails() {
+        // Arrange
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        var violation = new DataIntegrityViolationException("could not execute statement",
+                new RuntimeException("duplicate key value violates unique constraint \"uq_usuario_correo\""));
+
+        // Act
+        var response = handler.handleDataIntegrityViolation(violation);
+
+        // Assert
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody()).containsEntry("mensaje", "El correo ya está registrado");
     }
 }
