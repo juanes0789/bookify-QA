@@ -2,6 +2,8 @@ package udea.fabrica.bookify.domain.service;
 import java.time.OffsetDateTime; 
 import java.util.*; 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import udea.fabrica.bookify.domain.exception.*; 
 import udea.fabrica.bookify.domain.model.*; 
 import udea.fabrica.bookify.domain.port.in.*; 
@@ -11,12 +13,17 @@ public class BookingService implements CreateBookingUseCase, CancelBookingUseCas
     private final BookingRepositoryPort bookings; 
     private final AvailabilityRepositoryPort availability;
     private final ResourceAvailabilityPort resources;
+    private final BookingConfirmationNotificationPort confirmations;
 
     public BookingService(BookingRepositoryPort b, AvailabilityRepositoryPort a){
-        this(b, a, null);
+        this(b, a, null, null);
     }
     public BookingService(BookingRepositoryPort b, AvailabilityRepositoryPort a, ResourceAvailabilityPort resources){
-        bookings=b;availability=a;this.resources=resources;
+        this(b, a, resources, null);
+    }
+    public BookingService(BookingRepositoryPort b, AvailabilityRepositoryPort a, ResourceAvailabilityPort resources,
+                          BookingConfirmationNotificationPort confirmations){
+        bookings=b;availability=a;this.resources=resources;this.confirmations=confirmations;
     }
 
     @Transactional 
@@ -32,6 +39,7 @@ public class BookingService implements CreateBookingUseCase, CancelBookingUseCas
         a.setFechaActualizacion(now); 
         availability.save(a); 
         saved.setAvailabilityId(a.getId()); 
+        notifyConfirmation(saved.getId());
         return saved;
     }
 
@@ -50,6 +58,7 @@ public class BookingService implements CreateBookingUseCase, CancelBookingUseCas
         booking.setFechaReserva(now); booking.setFechaCreacion(now); booking.setFechaActualizacion(now);
         Booking saved = bookings.save(booking);
         resources.assignResourceToBooking(saved.getId(), resourceId);
+        notifyConfirmation(saved.getId());
         return saved;
     }
 
@@ -83,5 +92,19 @@ public class BookingService implements CreateBookingUseCase, CancelBookingUseCas
         Integer i=bookings.findReservationStatusIdByCode(code);
         if(i==null)throw new IllegalStateException("No existe el estado de reserva '"+code+"'.");
         return i;
+    }
+    private void notifyConfirmation(UUID bookingId) {
+        if (confirmations == null) return;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { sendConfirmationSafely(bookingId); }
+            });
+            return;
+        }
+        sendConfirmationSafely(bookingId);
+    }
+    private void sendConfirmationSafely(UUID bookingId) {
+        try { confirmations.sendOnce(bookingId); }
+        catch (RuntimeException ignored) { /* notification must not alter a confirmed booking */ }
     }
 }

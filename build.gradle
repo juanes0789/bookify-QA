@@ -24,6 +24,7 @@ dependencies {
 	implementation 'org.springframework.security:spring-security-crypto'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	
 	// Dependencias para HU-07 (Seguridad y JWT)
 	implementation 'org.springframework.boot:spring-boot-starter-security'

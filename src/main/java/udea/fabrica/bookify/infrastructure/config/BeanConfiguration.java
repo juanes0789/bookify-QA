@@ -7,6 +7,8 @@ import udea.fabrica.bookify.domain.port.in.GetBookingHistoryInputPort;
 import udea.fabrica.bookify.domain.port.in.GetClientNoShowReportUseCase;
 import udea.fabrica.bookify.domain.port.in.GetAttendanceMetricsUseCase;
 import udea.fabrica.bookify.domain.port.in.GetServiceCatalogInputPort;
+import udea.fabrica.bookify.domain.port.in.GetOccupancyMetricsUseCase;
+import udea.fabrica.bookify.domain.port.in.ExportMetricsUseCase;
 import udea.fabrica.bookify.domain.port.in.LoginUseCase;
 import udea.fabrica.bookify.domain.port.in.RegisterAttendanceUseCase;
 import udea.fabrica.bookify.domain.port.in.RegisterNonWorkingDayInputPort;
@@ -30,6 +32,8 @@ import udea.fabrica.bookify.domain.port.out.ResourceAvailabilityPort;
 import udea.fabrica.bookify.domain.port.out.SearchServicesOutputPort;
 import udea.fabrica.bookify.domain.port.out.ServiceCatalogOutputPort;
 import udea.fabrica.bookify.domain.port.out.UserRepositoryPort;
+import udea.fabrica.bookify.domain.port.out.OccupancyMetricsOutputPort;
+import udea.fabrica.bookify.domain.port.out.BookingConfirmationNotificationPort;
 import udea.fabrica.bookify.domain.service.BlockingDateService;
 import udea.fabrica.bookify.domain.service.ClientNoShowService;
 import udea.fabrica.bookify.domain.service.AttendanceMetricsService;
@@ -42,6 +46,8 @@ import udea.fabrica.bookify.domain.service.LoginService;
 import udea.fabrica.bookify.domain.service.NonWorkingDayService;
 import udea.fabrica.bookify.domain.service.RegisterUserService;
 import udea.fabrica.bookify.domain.service.SearchServicesService;
+import udea.fabrica.bookify.domain.service.OccupancyMetricsService;
+import udea.fabrica.bookify.domain.service.MetricsCsvExportService;
 
 @Configuration
 public class BeanConfiguration {
@@ -74,6 +80,14 @@ public class BeanConfiguration {
     }
 
     @Bean
+    public BookingService bookingService(BookingRepositoryPort bookingRepositoryPort,
+                                         AvailabilityRepositoryPort availabilityRepositoryPort,
+                                         ResourceAvailabilityPort resourceAvailabilityPort,
+                                         BookingConfirmationNotificationPort confirmations) {
+        return new BookingService(bookingRepositoryPort, availabilityRepositoryPort, resourceAvailabilityPort, confirmations);
+    }
+
+    /** Compatibility factory retained for existing callers and tests. */
     public BookingService bookingService(BookingRepositoryPort bookingRepositoryPort,
                                          AvailabilityRepositoryPort availabilityRepositoryPort,
                                          ResourceAvailabilityPort resourceAvailabilityPort) {
@@ -115,6 +129,19 @@ public class BeanConfiguration {
             AttendanceMetricsOutputPort attendanceMetricsOutputPort,
             MerchantProfileRepositoryPort merchantProfileRepositoryPort) {
         return new AttendanceMetricsService(attendanceMetricsOutputPort, merchantProfileRepositoryPort);
+    }
+
+    @Bean
+    public GetOccupancyMetricsUseCase getOccupancyMetricsUseCase(
+            OccupancyMetricsOutputPort occupancyMetricsOutputPort,
+            MerchantProfileRepositoryPort merchantProfileRepositoryPort) {
+        return new OccupancyMetricsService(occupancyMetricsOutputPort, merchantProfileRepositoryPort);
+    }
+
+    @Bean
+    public ExportMetricsUseCase exportMetricsUseCase(GetOccupancyMetricsUseCase occupancy,
+                                                     GetAttendanceMetricsUseCase attendance) {
+        return new MetricsCsvExportService(occupancy, attendance);
     }
 
     @Bean

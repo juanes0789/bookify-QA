@@ -33,6 +33,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(InsufficientDataException.class)
+    public ResponseEntity<Map<String, String>> handleInsufficientData(InsufficientDataException ex) {
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
+    }
+
     @ExceptionHandler(DoubleBookingException.class)
     public ResponseEntity<Map<String, String>> doubleBooking(DoubleBookingException ex) { return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(ERROR_KEY, ex.getMessage())); }
     @ExceptionHandler({InvalidCancellationException.class, BookingNotFoundException.class})
