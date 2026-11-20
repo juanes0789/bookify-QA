@@ -1,24 +1,32 @@
 package udea.fabrica.bookify.infrastructure.adapter.input.rest.controller;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import udea.fabrica.bookify.domain.model.Availability;
-import udea.fabrica.bookify.domain.port.in.CreateAvailabilityInputPort;
-import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.AvailabilityRequestDto;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import udea.fabrica.bookify.domain.model.Availability;
+import udea.fabrica.bookify.domain.port.in.CreateAvailabilityInputPort;
+import udea.fabrica.bookify.domain.port.in.ManageAvailabilityUseCase;
+import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.AvailabilityRequestDto;
+import udea.fabrica.bookify.infrastructure.adapter.input.rest.dto.request.UpdateAvailabilityRequestDto;
 
 class AvailabilityControllerTest {
+
+    private final CreateAvailabilityInputPort inputPort = mock(CreateAvailabilityInputPort.class);
+    private final ManageAvailabilityUseCase manageUseCase = mock(ManageAvailabilityUseCase.class);
+    private final AvailabilityController controller = new AvailabilityController(inputPort, manageUseCase);
 
     @Test
     void shouldCreateAvailabilityAndReturnCreatedResponse() {
         // Arrange
-        CreateAvailabilityInputPort inputPort = mock(CreateAvailabilityInputPort.class);
-        AvailabilityController controller = new AvailabilityController(inputPort);
         UUID agendaId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         OffsetDateTime start = OffsetDateTime.parse("2026-10-01T09:00:00Z");
@@ -55,5 +63,50 @@ class AvailabilityControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getId()).isEqualTo(created.getId());
         assertThat(response.getBody().getEstadoDisponibilidadId()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldUpdateAvailabilityWithAuthenticatedUser_andReturnOk() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        UUID availabilityId = UUID.randomUUID();
+        OffsetDateTime start = OffsetDateTime.parse("2026-11-25T10:00:00-05:00");
+        OffsetDateTime end = OffsetDateTime.parse("2026-11-25T11:00:00-05:00");
+        var authentication = new UsernamePasswordAuthenticationToken(
+                userId.toString(), "token", java.util.List.of(new SimpleGrantedAuthority("PROVEEDOR")));
+
+        UpdateAvailabilityRequestDto request = new UpdateAvailabilityRequestDto();
+        request.setInicioAt(start);
+        request.setFinAt(end);
+
+        Availability updated = new Availability(availabilityId, UUID.randomUUID(), 1, start, end, null,
+                start, start);
+        when(manageUseCase.update(userId, "PROVEEDOR", availabilityId, start, end)).thenReturn(updated);
+
+        // Act
+        var response = controller.updateAvailability(availabilityId, request, authentication);
+
+        // Assert
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getId()).isEqualTo(availabilityId);
+        assertThat(response.getBody().getInicioAt()).isEqualTo(start);
+        assertThat(response.getBody().getFinAt()).isEqualTo(end);
+    }
+
+    @Test
+    void shouldDeleteAvailabilityWithAuthenticatedUser_andReturnNoContent() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        UUID availabilityId = UUID.randomUUID();
+        var authentication = new UsernamePasswordAuthenticationToken(
+                userId.toString(), "token", java.util.List.of(new SimpleGrantedAuthority("PROVEEDOR")));
+
+        // Act
+        var response = controller.deleteAvailability(availabilityId, authentication);
+
+        // Assert
+        verify(manageUseCase).delete(userId, "PROVEEDOR", availabilityId);
+        assertThat(response.getStatusCode().value()).isEqualTo(204);
     }
 }
