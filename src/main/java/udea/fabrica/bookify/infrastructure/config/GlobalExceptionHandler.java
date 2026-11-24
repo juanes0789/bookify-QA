@@ -3,17 +3,12 @@ package udea.fabrica.bookify.infrastructure.config;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import udea.fabrica.bookify.domain.exception.AvailabilityOverlapException;
-import udea.fabrica.bookify.domain.exception.BookingNotFoundException;
-import udea.fabrica.bookify.domain.exception.DomainConflictException;
-import udea.fabrica.bookify.domain.exception.DomainForbiddenException;
-import udea.fabrica.bookify.domain.exception.DoubleBookingException;
-import udea.fabrica.bookify.domain.exception.InvalidCancellationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import udea.fabrica.bookify.domain.exception.*;
 
 @RestControllerAdvice
@@ -44,7 +39,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> bookingException(RuntimeException ex) {
         return ResponseEntity.status(ex instanceof BookingNotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST).body(Map.of(ERROR_KEY, ex.getMessage()));
     }
- 
+
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -105,6 +100,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DomainConflictException.class)
     public ResponseEntity<Map<String, String>> handleConflict(DomainConflictException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(AvailabilityNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleAvailabilityNotFound(AvailabilityNotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return build(HttpStatus.BAD_REQUEST,
+                "Valor inválido para '" + ex.getName() + "'. Las fechas usan el formato yyyy-MM-dd");
     }
 
     @ExceptionHandler(LoginBlockedException.class)
