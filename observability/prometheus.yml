@@ -6,4 +6,4 @@ scrape_configs:
     scheme: https
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['https://bookify-pb92.onrender.com']
+      - targets: ['bookify-pb92.onrender.com']
