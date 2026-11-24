@@ -108,6 +108,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/disponibilidades/**",
                             "/api/v1/comercio/**",
                             "/api/v1/dias-no-laborables/**").hasAuthority("PROVEEDOR")
+                    .requestMatchers("/actuator/prometheus", "/actuator/health").permitAll()
                     .requestMatchers("/api/v1/bookings/**",
                             "/api/v1/reservas/**").hasAuthority("CLIENTE")
                     .anyRequest().authenticated())
